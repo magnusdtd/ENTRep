@@ -35,10 +35,11 @@ class File:
                     shutil.copy2(source_path, destination_path)
                     print(f"Copied file: {item_name}")
                 elif os.path.isdir(source_path):
-                    shutil.copytree(source_path, destination_path)
-                    print(f"Copied folder: {item_name}")
+                    if not os.path.exists(destination_path):
+                        os.makedirs(destination_path)
+                    File.copy_files(source_path, destination_path)
 
-            print(f"Successfully copied all files and folders from {source_folder} to {destination_folder}")
+            print(f"Successfully copied all files and folders recursively from {source_folder} to {destination_folder}")
         except Exception as e:
             print(f"An error occurred: {str(e)}")
 
