@@ -70,5 +70,6 @@ class File:
         )
 
         # Run the EDA.ipynb to create a cleaned dataset
-        os.system('jupyter nbconvert --to notebook --execute EDA/EDA.ipynb --inplace')
+        from EDA.clean_dataset import clean
+        clean()
 
