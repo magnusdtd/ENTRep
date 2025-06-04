@@ -25,17 +25,20 @@ class File:
         try:
             if not os.path.exists(destination_folder):
                 os.makedirs(destination_folder)
-            files = os.listdir(source_folder)
-        
-            for file_name in files:
-                source_path = os.path.join(source_folder, file_name)
-                destination_path = os.path.join(destination_folder, file_name)
-                
+            items = os.listdir(source_folder)
+
+            for item_name in items:
+                source_path = os.path.join(source_folder, item_name)
+                destination_path = os.path.join(destination_folder, item_name)
+
                 if os.path.isfile(source_path):
                     shutil.copy2(source_path, destination_path)
-                    print(f"Copied: {file_name}")
-                
-            print(f"Successfully copied all files from {source_folder} to {destination_folder}")
+                    print(f"Copied file: {item_name}")
+                elif os.path.isdir(source_path):
+                    shutil.copytree(source_path, destination_path)
+                    print(f"Copied folder: {item_name}")
+
+            print(f"Successfully copied all files and folders from {source_folder} to {destination_folder}")
         except Exception as e:
             print(f"An error occurred: {str(e)}")
 
@@ -69,4 +72,3 @@ class File:
             "/kaggle/working/Dataset"
         )
 
-  
