@@ -1,0 +1,106 @@
+import torch
+from torch import nn
+from tqdm import tqdm
+from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
+
+
+class Resnet:
+  def __init__(self, backbone, num_classes: int = 7, num_types: int = 2):
+    self.num_classes = num_classes
+    self.num_types = num_types
+
+    self.model = backbone
+    self.model.fc = nn.Sequential(
+      nn.Linear(self.model.fc.in_features, 256),
+      nn.ReLU(),
+      nn.Dropout(0.4),
+      nn.Linear(256, self.num_classes + self.num_types)
+    )
+
+    self.classification_loss_fn = nn.CrossEntropyLoss()
+    self.type_loss_fn = nn.CrossEntropyLoss()
+
+    self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
+    self.epochs = 0
+
+    self.train_losses = []
+    self.val_losses = []
+
+  def forward(self, images: torch.Tensor):
+    outputs = self.model(images)
+    classification_output = outputs[:, :self.num_classes]
+    type_output = outputs[:, self.num_classes:]
+    return classification_output, type_output
+  
+  def train(self, train_loader:DataLoader, val_loader:DataLoader, epochs:int=10):
+    self.epochs = epochs
+
+    for epoch in range(self.epochs):
+      self.model.train()
+      train_loss = 0
+
+      num_batches = len(train_loader)
+      train_progress_bar = tqdm(enumerate(train_loader), total=num_batches, desc=f"Epoch {epoch + 1}")
+
+      for _, (images, labels) in train_progress_bar:
+        self.optimizer.zero_grad()
+
+        classification_output, type_output = self.forward(images)
+        classification_loss = self.classification_loss_fn(classification_output, labels['class'])
+        type_loss = self.type_loss_fn(type_output, labels['type'])
+
+        loss = classification_loss + type_loss
+        loss.backward()
+        self.optimizer.step()
+
+        train_loss += loss.item()
+        train_progress_bar.set_postfix(batch_loss=loss.item())
+
+      self.train_losses.append(train_loss / num_batches)
+      print(f"Epoch {epoch+1}/{self.epochs}, Training Loss: {train_loss:.4f}")
+
+      self.model.eval()
+      val_loss = 0
+      num_val_batches = len(val_loader)
+      correct_classification = 0
+      correct_type = 0
+      val_progress_bar = tqdm(enumerate(val_loader), total=num_val_batches, desc=f"Validation {epoch + 1}")
+      with torch.no_grad():
+        for _, (images, labels) in val_progress_bar:
+          classification_output, type_output = self.forward(images)
+          classification_loss = self.classification_loss_fn(classification_output, labels['class'])
+          type_loss = self.type_loss_fn(type_output, labels['type'])
+
+          loss = classification_loss + type_loss
+          val_loss += loss.item()
+          val_progress_bar.set_postfix(batch_loss=loss.item())
+
+          classification_predictions = torch.argmax(classification_output, dim=1)
+          type_predictions = torch.argmax(type_output, dim=1)
+
+          correct_classification += (classification_predictions == labels['class']).sum().item()
+          correct_type += (type_predictions == labels['type']).sum().item()
+
+      classification_accuracy = correct_classification / num_batches
+      type_accuracy = correct_type / num_batches
+
+      self.val_losses.append(val_loss / num_val_batches)
+      print(f"Epoch {epoch+1}/{self.epochs}, Validation Loss: {val_loss:.4f}")
+
+      print(f"Classification Accuracy: {classification_accuracy:.4f}")
+      print(f"Type Accuracy: {type_accuracy:.4f}")
+
+  def show_learning_curves(self):
+    if self.epochs <= 0:
+      raise ValueError(f"Invalid epochs {self.epochs}")
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(1, self.epochs + 1), self.train_losses, label="Training Loss", marker="o")
+    plt.plot(range(1, self.epochs + 1), self.val_losses, label="Validation Loss", marker="o")
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.title("Learning Curve")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
