@@ -69,6 +69,10 @@ class File:
             "/kaggle/input/entrep-public-dataset",
             "/kaggle/working/Dataset"
         )
+        File.copy_files(
+            "/kaggle/input/entrep-public-dataset/images",
+            "/kaggle/working/Dataset/images"
+        )
 
         # Run the EDA.ipynb to create a cleaned dataset
         from EDA.clean_dataset import clean
