@@ -223,7 +223,7 @@ class Resnet:
       self.classification_accuracies.append(classification_accuracy)
       self.type_accuracies.append(type_accuracy)
 
-      self.earlyStopping((classification_accuracy + type_accuracy) / 2, self.model)
+      self.earlyStopping(self.model, (classification_accuracy + type_accuracy) / 2)
       if self.earlyStopping.early_stop:
         print("Early stopping triggered.")
         break
