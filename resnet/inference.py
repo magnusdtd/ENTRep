@@ -3,11 +3,14 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from PIL import Image
 import numpy as np
+import torchvision.models as models
+from resnet.resnet import Resnet
 
 def load_model(model_path, device):
-    """Load the trained model from the specified path."""
-    model = torch.load(model_path, map_location=device)
-    model.eval()
+    """Load the trained model state dictionary into the Resnet architecture."""
+    model = Resnet(backbone=models.resnet50(weights=models.ResNet50_Weights.DEFAULT))
+    model.model.load_state_dict(torch.load(model_path, map_location=device))
+    model.model.eval()
     return model
 
 def preprocess_image(image_path):
