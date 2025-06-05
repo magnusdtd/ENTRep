@@ -10,16 +10,18 @@ class Resnet:
     self.num_classes = num_classes
     self.num_types = num_types
 
-    self.model = backbone
+    self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    self.model = backbone.to(self.device)
     self.model.fc = nn.Sequential(
       nn.Linear(self.model.fc.in_features, 256),
       nn.ReLU(),
       nn.Dropout(0.4),
       nn.Linear(256, self.num_classes + self.num_types)
-    )
+    ).to(self.device)
 
-    self.classification_loss_fn = nn.CrossEntropyLoss()
-    self.type_loss_fn = nn.CrossEntropyLoss()
+    self.classification_loss_fn = nn.CrossEntropyLoss().to(self.device)
+    self.type_loss_fn = nn.CrossEntropyLoss().to(self.device)
 
     self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
     self.epochs = 0
@@ -28,12 +30,13 @@ class Resnet:
     self.val_losses = []
 
   def forward(self, images: torch.Tensor):
+    images = images.to(self.device)
     outputs = self.model(images)
     classification_output = outputs[:, :self.num_classes]
     type_output = outputs[:, self.num_classes:]
     return classification_output, type_output
   
-  def train(self, train_loader:DataLoader, val_loader:DataLoader, epochs:int=10):
+  def train(self, train_loader: DataLoader, val_loader: DataLoader, epochs: int = 10):
     self.epochs = epochs
 
     for epoch in range(self.epochs):
@@ -44,6 +47,10 @@ class Resnet:
       train_progress_bar = tqdm(enumerate(train_loader), total=num_batches, desc=f"Epoch {epoch + 1}")
 
       for _, (images, labels) in train_progress_bar:
+        images = images.to(self.device)
+        labels['class'] = labels['class'].to(self.device)
+        labels['type'] = labels['type'].to(self.device)
+
         self.optimizer.zero_grad()
 
         classification_output, type_output = self.forward(images)
@@ -68,6 +75,10 @@ class Resnet:
       val_progress_bar = tqdm(enumerate(val_loader), total=num_val_batches, desc=f"Validation {epoch + 1}")
       with torch.no_grad():
         for _, (images, labels) in val_progress_bar:
+          images = images.to(self.device)
+          labels['class'] = labels['class'].to(self.device)
+          labels['type'] = labels['type'].to(self.device)
+
           classification_output, type_output = self.forward(images)
           classification_loss = self.classification_loss_fn(classification_output, labels['class'])
           type_loss = self.type_loss_fn(type_output, labels['type'])
