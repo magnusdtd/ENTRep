@@ -109,11 +109,11 @@ class Resnet:
       self.classification_accuracies.append(classification_accuracy)
       self.type_accuracies.append(type_accuracy)
 
-  def show_learning_curves(self, classification_accuracies, type_accuracies):
+  def show_learning_curves(self):
     if self.epochs <= 0:
       raise ValueError(f"Invalid epochs {self.epochs}")
 
-    fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+    _, axes = plt.subplots(1, 2, figsize=(16, 6))
 
     # Plot learning curves
     axes[0].plot(range(1, self.epochs + 1), self.train_losses, label="Training Loss", marker="o")
@@ -125,8 +125,8 @@ class Resnet:
     axes[0].grid(True)
 
     # Plot classification and type accuracy
-    axes[1].plot(range(1, self.epochs + 1), classification_accuracies, label="Classification Accuracy", marker="o")
-    axes[1].plot(range(1, self.epochs + 1), type_accuracies, label="Type Accuracy", marker="o")
+    axes[1].plot(range(1, self.epochs + 1), self.classification_accuracies, label="Classification Accuracy", marker="o")
+    axes[1].plot(range(1, self.epochs + 1), self.type_accuracies, label="Type Accuracy", marker="o")
     axes[1].set_xlabel("Epochs")
     axes[1].set_ylabel("Accuracy")
     axes[1].set_title("Accuracy Curve")
