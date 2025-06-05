@@ -3,6 +3,8 @@ from torch import nn
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
+from utils.earlyStopping import EarlyStopping
+from utils.unfreeze_layer import unfreeze_model_layers
 
 
 class Resnet:
@@ -30,6 +32,8 @@ class Resnet:
     self.val_losses = []
     self.classification_accuracies = []
     self.type_accuracies = []
+
+    self.earlyStopping = EarlyStopping(patience=7)
 
   def forward(self, images: torch.Tensor):
     images = images.to(self.device)
@@ -135,3 +139,91 @@ class Resnet:
 
     plt.tight_layout()
     plt.show()
+
+  def fine_tune(self, train_loader: DataLoader, val_loader: DataLoader, epochs: int = 10, unfreeze_layers: list = None):
+    """
+    Fine-tune the model with early stopping and layer unfreezing.
+
+    Args:
+        train_loader (DataLoader): Training data loader.
+        val_loader (DataLoader): Validation data loader.
+        epochs (int): Number of epochs for fine-tuning.
+        unfreeze_layers (list): List of layer names to unfreeze.
+    """
+    if unfreeze_layers:
+      unfreeze_model_layers(self.model, unfreeze_layers)
+
+    self.epochs = epochs
+
+    for epoch in range(self.epochs):
+      self.model.train()
+      train_loss = 0
+
+      num_batches = len(train_loader)
+      num_images = len(train_loader.dataset)
+      train_progress_bar = tqdm(enumerate(train_loader), total=num_batches, desc=f"Epoch {epoch + 1}")
+
+      for _, (images, labels) in train_progress_bar:
+        images = images.to(self.device)
+        labels['class'] = labels['class'].to(self.device)
+        labels['type'] = labels['type'].to(self.device)
+
+        self.optimizer.zero_grad()
+
+        classification_output, type_output = self.forward(images)
+        classification_loss = self.classification_loss_fn(classification_output, labels['class'])
+        type_loss = self.type_loss_fn(type_output, labels['type'])
+
+        loss = classification_loss + type_loss
+        loss.backward()
+        self.optimizer.step()
+
+        train_loss += loss.item()
+        train_progress_bar.set_postfix(batch_loss=loss.item())
+
+      self.train_losses.append(train_loss / num_images)
+      print(f"Epoch {epoch+1}/{self.epochs}, Training Loss: {train_loss / num_images:.4f}")
+
+      self.model.eval()
+      val_loss = 0
+      num_val_batches = len(val_loader)
+      num_val_images = len(val_loader.dataset)
+      correct_classification = 0
+      correct_type = 0
+      val_progress_bar = tqdm(enumerate(val_loader), total=num_val_batches, desc=f"Validation {epoch + 1}")
+      with torch.no_grad():
+        for _, (images, labels) in val_progress_bar:
+          images = images.to(self.device)
+          labels['class'] = labels['class'].to(self.device)
+          labels['type'] = labels['type'].to(self.device)
+
+          classification_output, type_output = self.forward(images)
+          classification_loss = self.classification_loss_fn(classification_output, labels['class'])
+          type_loss = self.type_loss_fn(type_output, labels['type'])
+
+          loss = classification_loss + type_loss
+          val_loss += loss.item()
+          val_progress_bar.set_postfix(batch_loss=loss.item())
+
+          classification_predictions = torch.argmax(classification_output, dim=1)
+          type_predictions = torch.argmax(type_output, dim=1)
+
+          correct_classification += (classification_predictions == labels['class']).sum().item()
+          correct_type += (type_predictions == labels['type']).sum().item()
+
+      classification_accuracy = correct_classification / num_val_images
+      type_accuracy = correct_type / num_val_images
+
+      self.val_losses.append(val_loss / num_val_images)
+      print(f"Epoch {epoch+1}/{self.epochs}, Validation Loss: {val_loss / num_val_images:.4f}")
+
+      print(f"Classification Accuracy: {classification_accuracy:.4f}")
+      print(f"Type Accuracy: {type_accuracy:.4f}")
+
+      self.classification_accuracies.append(classification_accuracy)
+      self.type_accuracies.append(type_accuracy)
+
+      self.earlyStopping((classification_accuracy + type_accuracy) / 2, self.model)
+      if self.earlyStopping.early_stop:
+        print("Early stopping triggered.")
+        break
