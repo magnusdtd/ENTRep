@@ -227,3 +227,8 @@ class Resnet:
       if self.earlyStopping.early_stop:
         print("Early stopping triggered.")
         break
+
+  def save_model_state(self, save_path: str):
+    """Save the state dictionary of the model to the specified path."""
+    torch.save(self.model.state_dict(), save_path)
+    print(f"Model state dictionary saved to {save_path}")
