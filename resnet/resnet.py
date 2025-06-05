@@ -28,6 +28,8 @@ class Resnet:
 
     self.train_losses = []
     self.val_losses = []
+    self.classification_accuracies = []
+    self.type_accuracies = []
 
   def forward(self, images: torch.Tensor):
     images = images.to(self.device)
@@ -44,6 +46,7 @@ class Resnet:
       train_loss = 0
 
       num_batches = len(train_loader)
+      num_images = len(train_loader.dataset)
       train_progress_bar = tqdm(enumerate(train_loader), total=num_batches, desc=f"Epoch {epoch + 1}")
 
       for _, (images, labels) in train_progress_bar:
@@ -64,12 +67,13 @@ class Resnet:
         train_loss += loss.item()
         train_progress_bar.set_postfix(batch_loss=loss.item())
 
-      self.train_losses.append(train_loss / num_batches)
-      print(f"Epoch {epoch+1}/{self.epochs}, Training Loss: {train_loss:.4f}")
+      self.train_losses.append(train_loss / num_images)
+      print(f"Epoch {epoch+1}/{self.epochs}, Training Loss: {train_loss / num_images:.4f}")
 
       self.model.eval()
       val_loss = 0
       num_val_batches = len(val_loader)
+      num_val_images = len(val_loader.dataset)
       correct_classification = 0
       correct_type = 0
       val_progress_bar = tqdm(enumerate(val_loader), total=num_val_batches, desc=f"Validation {epoch + 1}")
@@ -93,25 +97,41 @@ class Resnet:
           correct_classification += (classification_predictions == labels['class']).sum().item()
           correct_type += (type_predictions == labels['type']).sum().item()
 
-      classification_accuracy = correct_classification / num_batches
-      type_accuracy = correct_type / num_batches
+      classification_accuracy = correct_classification / num_val_images
+      type_accuracy = correct_type / num_val_images
 
-      self.val_losses.append(val_loss / num_val_batches)
-      print(f"Epoch {epoch+1}/{self.epochs}, Validation Loss: {val_loss:.4f}")
+      self.val_losses.append(val_loss / num_val_images)
+      print(f"Epoch {epoch+1}/{self.epochs}, Validation Loss: {val_loss / num_val_images:.4f}")
 
       print(f"Classification Accuracy: {classification_accuracy:.4f}")
       print(f"Type Accuracy: {type_accuracy:.4f}")
 
-  def show_learning_curves(self):
+      self.classification_accuracies.append(classification_accuracy)
+      self.type_accuracies.append(type_accuracy)
+
+  def show_learning_curves(self, classification_accuracies, type_accuracies):
     if self.epochs <= 0:
       raise ValueError(f"Invalid epochs {self.epochs}")
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(range(1, self.epochs + 1), self.train_losses, label="Training Loss", marker="o")
-    plt.plot(range(1, self.epochs + 1), self.val_losses, label="Validation Loss", marker="o")
-    plt.xlabel("Epochs")
-    plt.ylabel("Loss")
-    plt.title("Learning Curve")
-    plt.legend()
-    plt.grid(True)
+    fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+    # Plot learning curves
+    axes[0].plot(range(1, self.epochs + 1), self.train_losses, label="Training Loss", marker="o")
+    axes[0].plot(range(1, self.epochs + 1), self.val_losses, label="Validation Loss", marker="o")
+    axes[0].set_xlabel("Epochs")
+    axes[0].set_ylabel("Loss")
+    axes[0].set_title("Learning Curve")
+    axes[0].legend()
+    axes[0].grid(True)
+
+    # Plot classification and type accuracy
+    axes[1].plot(range(1, self.epochs + 1), classification_accuracies, label="Classification Accuracy", marker="o")
+    axes[1].plot(range(1, self.epochs + 1), type_accuracies, label="Type Accuracy", marker="o")
+    axes[1].set_xlabel("Epochs")
+    axes[1].set_ylabel("Accuracy")
+    axes[1].set_title("Accuracy Curve")
+    axes[1].legend()
+    axes[1].grid(True)
+
+    plt.tight_layout()
     plt.show()
