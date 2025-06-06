@@ -69,8 +69,8 @@ def random_inference_9_images(
             f"True: {true_class}/{true_type}\nPred: {inv_class_feature_map[class_]}/{inv_type_feature_map[type_]}",
         )
         fig.suptitle("True Labels and Predictions for Random Images", fontsize=18, y=1.03)
-        plt.tight_layout(rect=[0, 0, 1, 0.97])
-        plt.show()
+    plt.tight_layout(rect=[0, 0, 1, 0.97])
+    plt.show()
 
 if __name__ == "__main__":
     import argparse
