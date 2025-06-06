@@ -232,6 +232,7 @@ class Resnet:
       self.earlyStopping(self.model, (classification_accuracy + type_accuracy) / 2)
       if self.earlyStopping.early_stop:
         print("Early stopping triggered.")
+        self.epochs = epoch + 1
         break
 
   def save_model_state(self, save_path: str):
