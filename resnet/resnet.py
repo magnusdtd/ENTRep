@@ -232,7 +232,14 @@ class Resnet:
       self.earlyStopping(self.model, (classification_accuracy + type_accuracy) / 2)
       if self.earlyStopping.early_stop:
         print("Early stopping triggered.")
+        self.epochs = epoch + 1
         break
+
+    # Ensure data lists match the actual number of completed epochs
+    self.train_losses = self.train_losses[:self.epochs]
+    self.val_losses = self.val_losses[:self.epochs]
+    self.classification_accuracies = self.classification_accuracies[:self.epochs]
+    self.type_accuracies = self.type_accuracies[:self.epochs]
 
   def save_model_state(self, save_path: str):
     """Save the state dictionary of the model to the specified path."""
