@@ -9,7 +9,13 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
 class DenseNet:
-  def __init__(self, backbone, num_classes: int = 7, num_types: int = 2):
+  def __init__(
+      self, 
+      backbone, 
+      lr:int=1e-3,
+      num_classes: int = 7, 
+      num_types: int = 2
+):
     self.num_classes = num_classes
     self.num_types = num_types
 
@@ -26,7 +32,7 @@ class DenseNet:
     self.classification_loss_fn = nn.CrossEntropyLoss().to(self.device)
     self.type_loss_fn = nn.CrossEntropyLoss().to(self.device)
 
-    self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
+    self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr, weight_decay=1e-4)
     self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', patience=3)
     self.epochs = 0
 
