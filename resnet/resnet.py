@@ -27,7 +27,7 @@ class Resnet:
     self.type_loss_fn = nn.CrossEntropyLoss().to(self.device)
 
     self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
-    self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', patience=3, verbose=True)
+    self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', patience=3)
     self.epochs = 0
 
     self.train_losses = []

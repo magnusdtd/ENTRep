@@ -28,9 +28,7 @@ def preprocess_image(image_path):
 def classify_image(model, image_tensor, device):
     """Classify the image using the model."""
     image_tensor = image_tensor.to(device)
-    outputs = model(image_tensor)
-    classification_output = outputs[:, :model.num_classes]
-    type_output = outputs[:, model.num_classes:]
+    classification_output, type_output = model.forward(image_tensor)
 
     classification_prediction = torch.argmax(classification_output, dim=1).item()
     type_prediction = torch.argmax(type_output, dim=1).item()
