@@ -38,7 +38,14 @@ def classify_image(model, image_tensor, device):
 
     return classification_prediction, type_prediction
 
-def random_inference_9_images(model, df:pd.DataFrame, class_feature_map:dict, type_feature_map:dict, image_folder: str = "Dataset/images"):
+def random_inference_9_images(
+    model, 
+    df:pd.DataFrame, 
+    class_feature_map:dict, 
+    type_feature_map:dict, 
+    device: str,
+    image_folder: str = "Dataset/images"
+):
     """Randomly select 9 images from the folder"""
 
     inv_class_feature_map = {v: k for k, v in class_feature_map.items()}
