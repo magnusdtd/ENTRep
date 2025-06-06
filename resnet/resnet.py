@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 from utils.earlyStopping import EarlyStopping
 from utils.unfreeze_layer import unfreeze_model_layers
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
 class Resnet:
@@ -26,6 +27,7 @@ class Resnet:
     self.type_loss_fn = nn.CrossEntropyLoss().to(self.device)
 
     self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
+    self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', patience=3, verbose=True)
     self.epochs = 0
 
     self.train_losses = []
@@ -112,6 +114,8 @@ class Resnet:
 
       self.classification_accuracies.append(classification_accuracy)
       self.type_accuracies.append(type_accuracy)
+
+      self.scheduler.step(val_loss / num_val_images)
 
   def show_learning_curves(self):
     if self.epochs <= 0:
@@ -222,6 +226,8 @@ class Resnet:
 
       self.classification_accuracies.append(classification_accuracy)
       self.type_accuracies.append(type_accuracy)
+
+      self.scheduler.step(val_loss / num_val_images)
 
       self.earlyStopping(self.model, (classification_accuracy + type_accuracy) / 2)
       if self.earlyStopping.early_stop:
