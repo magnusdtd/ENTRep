@@ -55,7 +55,11 @@ def random_inference_9_images(
         image_path = os.path.join(image_folder, selected_images[i])
         image = Image.open(image_path).convert("RGB")
         image_name = os.path.basename(image_path)
-        true_class = df[df['Path'] == image_name]['Classification'].values[0]
+        true_class = df[df['Path'] == image_name]['Classification']
+        if true_class.empty:
+            print(f"Warning: No matching entry found for {image_name} in DataFrame.")
+            continue
+        true_class = true_class.values[0]
         image_tensor = preprocess_image(image_path)
         class_ = classify_image(model, image_tensor, device)
 

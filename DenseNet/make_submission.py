@@ -15,7 +15,7 @@ def make_submission(model, device:str, test_file_path: str, output_folder_path: 
         image_path = os.path.join('Dataset/test/imgs', img_name)
         image_tensor = preprocess_image(image_path)
         predicted_label = classify_image(model, image_tensor, device)
-        predictions[image_path] = predicted_label
+        predictions[img_name] = predicted_label
 
     # Generate unique JSON filename
     daytime = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -26,8 +26,8 @@ def make_submission(model, device:str, test_file_path: str, output_folder_path: 
     with open(json_file_path, 'w') as json_file:
         json.dump(predictions, json_file)
 
-    # Create ZIP archive
-    zip_file_path = os.path.join(output_folder_path, 'predictions.zip')
+    # Create ZIP archive with the same name as the JSON file
+    zip_file_path = os.path.join(output_folder_path, f'result_{daytime}.zip')
     with zipfile.ZipFile(zip_file_path, 'w') as zip_file:
         zip_file.write(json_file_path, arcname=json_file_name)
 
