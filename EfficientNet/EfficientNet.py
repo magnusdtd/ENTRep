@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from classification.classification import Classification
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from utils.focal_loss import FocalLoss
 
 class EfficientNet(Classification):
   def __init__(
@@ -21,7 +22,7 @@ class EfficientNet(Classification):
         nn.Linear(256, self.num_classes)
     ).to(self.device)
 
-    self.classification_loss_fn = nn.CrossEntropyLoss().to(self.device)
+    self.classification_loss_fn = FocalLoss(alpha=1, gamma=2).to(self.device)
 
     self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr, weight_decay=1e-4)
 
