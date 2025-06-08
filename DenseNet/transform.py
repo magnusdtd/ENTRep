@@ -12,11 +12,11 @@ def get_transform(train:bool=True, inference:bool=False, image_size:Tuple[int, i
     transforms_list = []
     if train:
         transforms_list.extend([
-            A.OneOf([
-                A.Transpose(p=1.0),
-                A.VerticalFlip(p=1.0),
-                A.HorizontalFlip(p=1.0),
-            ], p=0.8),
+            # A.OneOf([
+            #     A.Transpose(p=1.0),
+            #     A.VerticalFlip(p=1.0),
+            #     A.HorizontalFlip(p=1.0),
+            # ], p=0.8),
 
             A.Affine(translate_percent=0.05, scale=(0.9, 1.1), rotate=(-15, 15), p=0.5),
 
