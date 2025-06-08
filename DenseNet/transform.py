@@ -43,7 +43,7 @@ def get_transform(train:bool=True, inference:bool=False, image_size:Tuple[int, i
     ])
     return A.Compose(transforms_list)
 
-def visualize_sample(dataloader: DataLoader, class_feature_map: dict, type_feature_map:dict):
+def visualize_sample(dataloader: DataLoader, class_feature_map: dict):
     images, labels = next(iter(dataloader))
     batch_size = min(len(images), 9)
 
@@ -51,7 +51,6 @@ def visualize_sample(dataloader: DataLoader, class_feature_map: dict, type_featu
     std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
 
     inv_class_feature_map = {v: k for k, v in class_feature_map.items()}
-    inv_type_feature_map = {v: k for k, v in type_feature_map.items()}
 
     _, axes = plt.subplots(batch_size, 2, figsize=(10, 4 * batch_size))
     if batch_size == 1:
@@ -60,13 +59,11 @@ def visualize_sample(dataloader: DataLoader, class_feature_map: dict, type_featu
     for i in range(batch_size):
         image_tensor = images[i]
         _class = int(labels["class"][i])
-        _type = int(labels["type"][i])
         img_name = labels["filename"][i]
-        img_path = os.path.join('Dataset/images', img_name)
+        img_path = os.path.join('Dataset/train/imgs', img_name)
         img = Image.open(img_path).convert('RGB')
 
         class_name = inv_class_feature_map[_class]
-        type_name = inv_type_feature_map[_type]
 
         transformed_image = image_tensor.cpu() * std + mean
         transformed_image = transformed_image.permute(1, 2, 0).numpy()
@@ -79,7 +76,7 @@ def visualize_sample(dataloader: DataLoader, class_feature_map: dict, type_featu
         axes[i, 0].axis('off')
 
         axes[i, 1].imshow(transformed_image_resized)
-        axes[i, 1].set_title(f"Transformed\nClass: {class_name} ({_class})\nType: {type_name} ({_type})")
+        axes[i, 1].set_title(f"Transformed\nClass: {class_name} ({_class})")
         axes[i, 1].axis('off')
 
     plt.tight_layout()
