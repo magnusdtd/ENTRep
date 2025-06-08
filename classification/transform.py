@@ -25,13 +25,11 @@ def get_transform(train:bool=True, image_size:Tuple[int, int]=(640, 480)):
                 A.GaussNoise(p=1.0)
             ], p=0.5),
 
-            A.ElasticTransform(alpha=1, sigma=50, alpha_affine=50, p=0.5),
+            A.ElasticTransform(alpha=1, sigma=50, p=0.5),
 
             A.GridDistortion(num_steps=5, distort_limit=0.3, p=0.5),
 
-            A.CoarseDropout(
-                max_holes=8, max_height=32, max_width=32, p=0.5
-            ),
+            A.CoarseDropout(num_holes_range=(1, 5), p=0.5),
 
             A.CLAHE(clip_limit=4.0, tile_grid_size=(8, 8), p=0.5)
         ])
