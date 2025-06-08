@@ -12,7 +12,7 @@ def make_submission(model, device:str, test_file_path: str, output_folder_path: 
     # Create predictions dictionary
     predictions = {}
     for img_name in test_df['image_path']:
-        image_path = os.path.join('Dataset/train/imgs', img_name)
+        image_path = os.path.join('Dataset/test/imgs', img_name)
         image_tensor = preprocess_image(image_path)
         predicted_label = classify_image(model, image_tensor, device)
         predictions[image_path] = predicted_label
