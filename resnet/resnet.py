@@ -8,10 +8,14 @@ from utils.unfreeze_layer import unfreeze_model_layers
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
-class Resnet:
-  def __init__(self, backbone, num_classes: int = 7, num_types: int = 2):
+class ResNet:
+  def __init__(
+      self, 
+      backbone, 
+      lr:int=1e-3,
+      num_classes: int = 7
+):
     self.num_classes = num_classes
-    self.num_types = num_types
 
     self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -20,30 +24,26 @@ class Resnet:
       nn.Linear(self.model.fc.in_features, 256),
       nn.ReLU(),
       nn.Dropout(0.4),
-      nn.Linear(256, self.num_classes + self.num_types)
+      nn.Linear(256, self.num_classes)
     ).to(self.device)
 
     self.classification_loss_fn = nn.CrossEntropyLoss().to(self.device)
-    self.type_loss_fn = nn.CrossEntropyLoss().to(self.device)
 
-    self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
+    self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr, weight_decay=1e-4)
     self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', patience=3)
     self.epochs = 0
 
     self.train_losses = []
     self.val_losses = []
     self.classification_accuracies = []
-    self.type_accuracies = []
 
     self.earlyStopping = EarlyStopping(patience=7)
 
   def forward(self, images: torch.Tensor):
     images = images.to(self.device)
     outputs = self.model(images)
-    classification_output = outputs[:, :self.num_classes]
-    type_output = outputs[:, self.num_classes:]
-    return classification_output, type_output
-  
+    return outputs
+
   def train(self, train_loader: DataLoader, val_loader: DataLoader, epochs: int = 10):
     self.epochs = epochs
 
@@ -57,21 +57,19 @@ class Resnet:
 
       for _, (images, labels) in train_progress_bar:
         images = images.to(self.device)
-        labels['class'] = labels['class'].to(self.device)
-        labels['type'] = labels['type'].to(self.device)
+        labels = labels['class']
+        labels = labels.to(self.device)
 
         self.optimizer.zero_grad()
 
-        classification_output, type_output = self.forward(images)
-        classification_loss = self.classification_loss_fn(classification_output, labels['class'])
-        type_loss = self.type_loss_fn(type_output, labels['type'])
+        outputs = self.forward(images)
+        classification_loss = self.classification_loss_fn(outputs, labels)
 
-        loss = classification_loss + type_loss
-        loss.backward()
+        classification_loss.backward()
         self.optimizer.step()
 
-        train_loss += loss.item()
-        train_progress_bar.set_postfix(batch_loss=loss.item())
+        train_loss += classification_loss.item()
+        train_progress_bar.set_postfix(batch_loss=classification_loss.item())
 
       self.train_losses.append(train_loss / num_images)
       print(f"Epoch {epoch+1}/{self.epochs}, Training Loss: {train_loss / num_images:.4f}")
@@ -81,39 +79,30 @@ class Resnet:
       num_val_batches = len(val_loader)
       num_val_images = len(val_loader.dataset)
       correct_classification = 0
-      correct_type = 0
       val_progress_bar = tqdm(enumerate(val_loader), total=num_val_batches, desc=f"Validation {epoch + 1}")
       with torch.no_grad():
         for _, (images, labels) in val_progress_bar:
           images = images.to(self.device)
-          labels['class'] = labels['class'].to(self.device)
-          labels['type'] = labels['type'].to(self.device)
+          labels = labels['class']
+          labels = labels.to(self.device)
 
-          classification_output, type_output = self.forward(images)
-          classification_loss = self.classification_loss_fn(classification_output, labels['class'])
-          type_loss = self.type_loss_fn(type_output, labels['type'])
+          outputs = self.forward(images)
+          classification_loss = self.classification_loss_fn(outputs, labels)
 
-          loss = classification_loss + type_loss
-          val_loss += loss.item()
-          val_progress_bar.set_postfix(batch_loss=loss.item())
+          val_loss += classification_loss.item()
+          val_progress_bar.set_postfix(batch_loss=classification_loss.item())
 
-          classification_predictions = torch.argmax(classification_output, dim=1)
-          type_predictions = torch.argmax(type_output, dim=1)
-
-          correct_classification += (classification_predictions == labels['class']).sum().item()
-          correct_type += (type_predictions == labels['type']).sum().item()
+          classification_predictions = torch.argmax(outputs, dim=1)
+          correct_classification += (classification_predictions == labels).sum().item()
 
       classification_accuracy = correct_classification / num_val_images
-      type_accuracy = correct_type / num_val_images
 
       self.val_losses.append(val_loss / num_val_images)
       print(f"Epoch {epoch+1}/{self.epochs}, Validation Loss: {val_loss / num_val_images:.4f}")
 
       print(f"Classification Accuracy: {classification_accuracy:.4f}")
-      print(f"Type Accuracy: {type_accuracy:.4f}")
 
       self.classification_accuracies.append(classification_accuracy)
-      self.type_accuracies.append(type_accuracy)
 
       self.scheduler.step(val_loss / num_val_images)
 
@@ -132,9 +121,8 @@ class Resnet:
     axes[0].legend()
     axes[0].grid(True)
 
-    # Plot classification and type accuracy
+    # Plot classification accuracy
     axes[1].plot(range(1, self.epochs + 1), self.classification_accuracies, label="Classification Accuracy", marker="o")
-    axes[1].plot(range(1, self.epochs + 1), self.type_accuracies, label="Type Accuracy", marker="o")
     axes[1].set_xlabel("Epochs")
     axes[1].set_ylabel("Accuracy")
     axes[1].set_title("Accuracy Curve")
@@ -169,21 +157,19 @@ class Resnet:
 
       for _, (images, labels) in train_progress_bar:
         images = images.to(self.device)
-        labels['class'] = labels['class'].to(self.device)
-        labels['type'] = labels['type'].to(self.device)
+        labels = labels['class']
+        labels = labels.to(self.device)
 
         self.optimizer.zero_grad()
 
-        classification_output, type_output = self.forward(images)
-        classification_loss = self.classification_loss_fn(classification_output, labels['class'])
-        type_loss = self.type_loss_fn(type_output, labels['type'])
+        outputs = self.forward(images)
+        classification_loss = self.classification_loss_fn(outputs, labels)
 
-        loss = classification_loss + type_loss
-        loss.backward()
+        classification_loss.backward()
         self.optimizer.step()
 
-        train_loss += loss.item()
-        train_progress_bar.set_postfix(batch_loss=loss.item())
+        train_loss += classification_loss.item()
+        train_progress_bar.set_postfix(batch_loss=classification_loss.item())
 
       self.train_losses.append(train_loss / num_images)
       print(f"Epoch {epoch+1}/{self.epochs}, Training Loss: {train_loss / num_images:.4f}")
@@ -193,43 +179,34 @@ class Resnet:
       num_val_batches = len(val_loader)
       num_val_images = len(val_loader.dataset)
       correct_classification = 0
-      correct_type = 0
       val_progress_bar = tqdm(enumerate(val_loader), total=num_val_batches, desc=f"Validation {epoch + 1}")
       with torch.no_grad():
         for _, (images, labels) in val_progress_bar:
           images = images.to(self.device)
-          labels['class'] = labels['class'].to(self.device)
-          labels['type'] = labels['type'].to(self.device)
+          labels = labels['class']
+          labels = labels.to(self.device)
 
-          classification_output, type_output = self.forward(images)
-          classification_loss = self.classification_loss_fn(classification_output, labels['class'])
-          type_loss = self.type_loss_fn(type_output, labels['type'])
+          outputs = self.forward(images)
+          classification_loss = self.classification_loss_fn(outputs, labels)
 
-          loss = classification_loss + type_loss
-          val_loss += loss.item()
-          val_progress_bar.set_postfix(batch_loss=loss.item())
+          val_loss += classification_loss.item()
+          val_progress_bar.set_postfix(batch_loss=classification_loss.item())
 
-          classification_predictions = torch.argmax(classification_output, dim=1)
-          type_predictions = torch.argmax(type_output, dim=1)
-
-          correct_classification += (classification_predictions == labels['class']).sum().item()
-          correct_type += (type_predictions == labels['type']).sum().item()
+          classification_predictions = torch.argmax(outputs, dim=1)
+          correct_classification += (classification_predictions == labels).sum().item()
 
       classification_accuracy = correct_classification / num_val_images
-      type_accuracy = correct_type / num_val_images
 
       self.val_losses.append(val_loss / num_val_images)
       print(f"Epoch {epoch+1}/{self.epochs}, Validation Loss: {val_loss / num_val_images:.4f}")
 
       print(f"Classification Accuracy: {classification_accuracy:.4f}")
-      print(f"Type Accuracy: {type_accuracy:.4f}")
 
       self.classification_accuracies.append(classification_accuracy)
-      self.type_accuracies.append(type_accuracy)
 
       self.scheduler.step(val_loss / num_val_images)
 
-      self.earlyStopping(self.model, (classification_accuracy + type_accuracy) / 2)
+      self.earlyStopping(self.model, classification_accuracy)
       if self.earlyStopping.early_stop:
         print("Early stopping triggered.")
         self.epochs = epoch + 1
@@ -239,7 +216,6 @@ class Resnet:
     self.train_losses = self.train_losses[:self.epochs]
     self.val_losses = self.val_losses[:self.epochs]
     self.classification_accuracies = self.classification_accuracies[:self.epochs]
-    self.type_accuracies = self.type_accuracies[:self.epochs]
 
   def save_model_state(self, save_path: str):
     """Save the state dictionary of the model to the specified path."""

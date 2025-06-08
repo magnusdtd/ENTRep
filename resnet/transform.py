@@ -8,17 +8,11 @@ from PIL import Image
 from torch.utils.data import DataLoader
 import os
 
-def get_transform(train:bool=True, inference:bool=False, image_size:Tuple[int, int]=(640, 480)):
+def get_transform(train:bool=True, image_size:Tuple[int, int]=(640, 480)):
     transforms_list = []
     if train:
         transforms_list.extend([
-            A.OneOf([
-                A.Transpose(p=1.0),
-                A.VerticalFlip(p=1.0),
-                A.HorizontalFlip(p=1.0),
-            ], p=0.8),
-
-            A.Affine(translate_percent=0.05, scale=(0.9, 1.1), rotate=(-15, 15), p=0.5),
+            A.Affine(translate_percent=0.05, scale=(0.9, 1.1), rotate=(-10, 10), p=0.5),
 
             A.OneOf([
                 A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=1.0),
@@ -31,10 +25,15 @@ def get_transform(train:bool=True, inference:bool=False, image_size:Tuple[int, i
                 A.GaussNoise(p=1.0)
             ], p=0.5),
 
+            A.ElasticTransform(alpha=1, sigma=50, alpha_affine=50, p=0.5),
+
+            A.GridDistortion(num_steps=5, distort_limit=0.3, p=0.5),
+
             A.CoarseDropout(
-                num_holes_range = (1, 3),
-                p=0.4
-            )
+                max_holes=8, max_height=32, max_width=32, p=0.5
+            ),
+
+            A.CLAHE(clip_limit=4.0, tile_grid_size=(8, 8), p=0.5)
         ])
     transforms_list.extend([
         A.Resize(*image_size),
@@ -43,7 +42,7 @@ def get_transform(train:bool=True, inference:bool=False, image_size:Tuple[int, i
     ])
     return A.Compose(transforms_list)
 
-def visualize_sample(dataloader: DataLoader, class_feature_map: dict, type_feature_map:dict):
+def visualize_sample(dataloader: DataLoader, class_feature_map: dict):
     images, labels = next(iter(dataloader))
     batch_size = min(len(images), 9)
 
@@ -51,7 +50,6 @@ def visualize_sample(dataloader: DataLoader, class_feature_map: dict, type_featu
     std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
 
     inv_class_feature_map = {v: k for k, v in class_feature_map.items()}
-    inv_type_feature_map = {v: k for k, v in type_feature_map.items()}
 
     _, axes = plt.subplots(batch_size, 2, figsize=(10, 4 * batch_size))
     if batch_size == 1:
@@ -60,13 +58,11 @@ def visualize_sample(dataloader: DataLoader, class_feature_map: dict, type_featu
     for i in range(batch_size):
         image_tensor = images[i]
         _class = int(labels["class"][i])
-        _type = int(labels["type"][i])
         img_name = labels["filename"][i]
-        img_path = os.path.join('Dataset/images', img_name)
+        img_path = os.path.join('Dataset/train/imgs', img_name)
         img = Image.open(img_path).convert('RGB')
 
         class_name = inv_class_feature_map[_class]
-        type_name = inv_type_feature_map[_type]
 
         transformed_image = image_tensor.cpu() * std + mean
         transformed_image = transformed_image.permute(1, 2, 0).numpy()
@@ -79,7 +75,7 @@ def visualize_sample(dataloader: DataLoader, class_feature_map: dict, type_featu
         axes[i, 0].axis('off')
 
         axes[i, 1].imshow(transformed_image_resized)
-        axes[i, 1].set_title(f"Transformed\nClass: {class_name} ({_class})\nType: {type_name} ({_type})")
+        axes[i, 1].set_title(f"Transformed\nClass: {class_name} ({_class})")
         axes[i, 1].axis('off')
 
     plt.tight_layout()
