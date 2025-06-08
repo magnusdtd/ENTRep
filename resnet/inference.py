@@ -3,7 +3,7 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from PIL import Image
 import numpy as np
-from ResNet.resnet import ResNet
+from resnet.resnet import ResNet
 import os, random
 import pandas as pd
 import matplotlib.pyplot as plt
