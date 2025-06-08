@@ -92,3 +92,8 @@ class File:
             "/kaggle/working/Dataset/train"
         )
 
+        File.copy_files(
+            "/kaggle/input/entrep-public-test/test",
+            "/kaggle/working/Dataset/test"
+        )
+
