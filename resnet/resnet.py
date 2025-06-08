@@ -20,8 +20,8 @@ class ResNet:
     self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     self.model = backbone.to(self.device)
-    self.model.classifier = nn.Sequential(
-      nn.Linear(self.model.classifier.in_features, 256),
+    self.model.fc = nn.Sequential(
+      nn.Linear(self.model.fc.in_features, 256),
       nn.ReLU(),
       nn.Dropout(0.4),
       nn.Linear(256, self.num_classes)
