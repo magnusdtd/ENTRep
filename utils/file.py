@@ -67,10 +67,33 @@ class File:
         # Copy the Kaggle dataset to the current directoru
         File.copy_files(
             "/kaggle/input/entrep-public-dataset",
-            "/kaggle/working/Dataset"
+            "/kaggle/working/Dataset/public"
         )
 
         # Run the EDA.ipynb to create a cleaned dataset
         from EDA.clean_dataset import clean
         clean()
+
+    @staticmethod
+    def make_train_path():
+        """
+        This function will create paths to run the notebook in Kaggle. 
+        This function use the train dataset instead of public dataset
+        """
+
+        # Copy all repo files to the current directory
+        File.copy_files(
+            "/kaggle/working/ENTRep",
+            "/kaggle/working"
+        )
+
+        File.copy_files(
+            "/kaggle/input/entrep-train-dataset/train",
+            "/kaggle/working/Dataset/train"
+        )
+
+        File.copy_files(
+            "/kaggle/input/entrep-public-test/test",
+            "/kaggle/working/Dataset/test"
+        )
 
