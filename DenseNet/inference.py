@@ -42,7 +42,7 @@ def random_inference_9_images(
     df:pd.DataFrame, 
     class_feature_map:dict, 
     device: str,
-    image_folder: str = "Dataset/train/images"
+    image_folder: str = "Dataset/train/imgs"
 ):
     """Randomly select 9 images from the folder"""
 
