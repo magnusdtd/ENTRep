@@ -88,7 +88,7 @@ class File:
         )
 
         File.copy_files(
-            "/kaggle/input/entrep-public-dataset",
+            "/kaggle/input/entrep-train-dataset/train",
             "/kaggle/working/Dataset/train"
         )
 
