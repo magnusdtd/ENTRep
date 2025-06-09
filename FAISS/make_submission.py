@@ -28,14 +28,13 @@ def make_submission(model_path:str, backbone, model_name:str, test_file_path: st
     # Build FAISS index
     dim = features.shape[1]
     indexer = FAISSIndexer(dim)
-    indexer.add_features(features)
+    indexer.add_features(features, [None] * len(features), paths)
 
     # Retrieve nearest neighbors
     retrieved_images = {}
     for i, path in enumerate(paths):
-        distances, indices = indexer.search(features[i:i+1], k=1)
-        retrieved_path = paths[indices[0][0]]
-        retrieved_images[os.path.basename(path)] = os.path.basename(retrieved_path)
+        _, _, _, retrieved_paths = indexer.search(features[i:i+1], k=1)
+        retrieved_images[path] = retrieved_paths[0][0]
 
     # Save to JSON
     daytime = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')

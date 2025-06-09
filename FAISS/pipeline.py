@@ -30,12 +30,12 @@ class Pipeline:
     # Build FAISS index
     dim = features.shape[1]
     indexer = FAISSIndexer(dim)
-    indexer.add_features(features)
+    indexer.add_features(features, labels, paths)
 
     # Evaluate recall
     evaluator = Evaluator()
     K_values = [1, 5, 10]
-    avg_recalls = evaluator.evaluate_recall_at_k(indexer.index, features, labels, paths, df, K_values)
+    avg_recalls = evaluator.evaluate_recall_at_k(indexer, features, labels, K_values)
 
     # Print results
     for K, val in avg_recalls.items():
