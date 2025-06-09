@@ -3,7 +3,7 @@ import json
 import zipfile
 import pandas as pd
 import datetime
-from resnet.inference import preprocess_image, classify_image
+from classification.inference import preprocess_image, classify_image
 
 def make_submission(model, model_name:str, device:str, test_file_path: str, output_folder_path: str = './results'):
     # Load test file paths
