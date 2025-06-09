@@ -19,7 +19,7 @@ class Pipeline:
     # Load dataset
     df = pd.read_json(self.dataset_path, orient='index').reset_index()
     df.columns = ['Path', 'Classification']
-    dataset = ENTRepDataset(df, self.class_feature_map, get_transform())
+    dataset = ENTRepDataset(df, self.class_feature_map, get_transform(train=False))
     dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
     # Extract features

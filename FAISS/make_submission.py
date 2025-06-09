@@ -14,7 +14,7 @@ def make_submission(model_path:str, backbone, model_name:str, test_file_path: st
     test_df = pd.read_csv(test_file_path, header=None, names=['Path'])
     dataset = ENTRepDataset(
         test_df, {}, 
-        get_transform(),
+        get_transform(train=False),
         images_dir='Dataset/test/imgs',
         is_inference=True
     )
