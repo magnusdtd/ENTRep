@@ -35,7 +35,7 @@ class Pipeline:
     # Evaluate recall
     evaluator = Evaluator()
     K_values = [1, 5, 10]
-    avg_recalls = evaluator.evaluate_recall_at_k(indexer.index, features, labels, paths, K_values)
+    avg_recalls = evaluator.evaluate_recall_at_k(indexer.index, features, labels, paths, df, K_values)
 
     # Print results
     for K, val in avg_recalls.items():
