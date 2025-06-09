@@ -97,3 +97,7 @@ class File:
             "/kaggle/working/Dataset/test"
         )
 
+        File.copy_files(
+            "/kaggle/input/entrep-model-weights/pytorch/default/1/model_weights",
+            "kaggle/working/model_weights"
+        )
