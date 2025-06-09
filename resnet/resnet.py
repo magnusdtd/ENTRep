@@ -3,7 +3,7 @@ from torch import nn
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
-from utils.earlyStopping import EarlyStopping
+from utils.early_stopping import EarlyStopping
 from utils.unfreeze_layer import unfreeze_model_layers
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
