@@ -26,6 +26,7 @@ class Pipeline:
     feature_extractor = ResNet_FE(self.backbone)
     feature_extractor.load_model_state(self.model_path, self.backbone)
     features, labels, paths = feature_extractor.extract_features(dataloader)
+    # (1291, 2048), 1291, 1291
 
     # Build FAISS index
     dim = features.shape[1]
@@ -39,4 +40,4 @@ class Pipeline:
 
     # Print results
     for K, val in avg_recalls.items():
-        print(f"Recall@{K}: {val:.4f}")
+      print(f"Recall@{K}: {val}")

@@ -23,7 +23,7 @@ class Evaluator:
     correct_retrievals = 0
     
     # Pre-compute number of relevant images per query label in the gallery
-    label_counts = Counter(gallery_labels)
+    label_counts = Counter(gallery_labels.tolist())
 
     for i, query_label in enumerate(query_labels):
       # Number of relevant items in the gallery for this query
@@ -46,13 +46,13 @@ class Evaluator:
       recalls = {}
 
       # Perform FAISS search
-      _, _, gallery_labels, _ = index.search(features, max(K_values))
+      _, indices, _, _ = index.search(features, max(K_values))
 
       for k in K_values:
         recalls[k] = Evaluator.recall_at_k(
-          query_labels=query_labels,
-          gallery_labels=gallery_labels, 
-          topk_indices=gallery_labels,
+          query_labels=query_labels,    # (n_queries,) = (1291,)
+          gallery_labels=index.labels,  # (n_gallery,) = (1291,)
+          topk_indices=indices,         # (n_queries, K) = (1291, K)
           k=k
         )
 

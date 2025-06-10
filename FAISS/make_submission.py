@@ -33,8 +33,8 @@ def make_submission(model_path:str, backbone, model_name:str, test_file_path: st
     # Retrieve nearest neighbors
     retrieved_images = {}
     for i, path in enumerate(paths):
-        _, _, _, retrieved_paths = indexer.search(features[i:i+1], k=1)
-        retrieved_images[path] = retrieved_paths[0][0]
+        _, _, _, retrieved_paths = indexer.search(features[i:i+1], k=2)
+        retrieved_images[path] = retrieved_paths[0][1]
 
     # Save to JSON
     daytime = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
