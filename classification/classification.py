@@ -35,68 +35,6 @@ class Classification:
     outputs = self.model(images)
     return outputs
 
-  def train(self, train_loader: DataLoader, val_loader: DataLoader, epochs: int = 10):
-    self.epochs = epochs
-
-    for epoch in range(self.epochs):
-      self.model.train()
-      train_loss = 0
-
-      num_batches = len(train_loader)
-      num_images = len(train_loader.dataset)
-      train_progress_bar = tqdm(enumerate(train_loader), total=num_batches, desc=f"Epoch {epoch + 1}")
-
-      for _, (images, labels) in train_progress_bar:
-        images = images.to(self.device)
-        labels = labels['class']
-        labels = labels.to(self.device)
-
-        self.optimizer.zero_grad()
-
-        outputs = self.forward(images)
-        classification_loss = self.classification_loss_fn(outputs, labels)
-
-        classification_loss.backward()
-        self.optimizer.step()
-
-        train_loss += classification_loss.item()
-        train_progress_bar.set_postfix(batch_loss=classification_loss.item())
-
-      self.train_losses.append(train_loss / num_images)
-      print(f"Epoch {epoch+1}/{self.epochs}, Training Loss: {train_loss / num_images:.4f}")
-
-      self.model.eval()
-      val_loss = 0
-      num_val_batches = len(val_loader)
-      num_val_images = len(val_loader.dataset)
-      correct_classification = 0
-      val_progress_bar = tqdm(enumerate(val_loader), total=num_val_batches, desc=f"Validation {epoch + 1}")
-      with torch.no_grad():
-        for _, (images, labels) in val_progress_bar:
-          images = images.to(self.device)
-          labels = labels['class']
-          labels = labels.to(self.device)
-
-          outputs = self.forward(images)
-          classification_loss = self.classification_loss_fn(outputs, labels)
-
-          val_loss += classification_loss.item()
-          val_progress_bar.set_postfix(batch_loss=classification_loss.item())
-
-          classification_predictions = torch.argmax(outputs, dim=1)
-          correct_classification += (classification_predictions == labels).sum().item()
-
-      classification_accuracy = correct_classification / num_val_images
-
-      self.val_losses.append(val_loss / num_val_images)
-      print(f"Epoch {epoch+1}/{self.epochs}, Validation Loss: {val_loss / num_val_images:.4f}")
-
-      print(f"Classification Accuracy: {classification_accuracy:.4f}")
-
-      self.classification_accuracies.append(classification_accuracy)
-
-      self.scheduler.step(val_loss / num_val_images)
-
   def show_learning_curves(self):
     if self.epochs <= 0:
       raise ValueError(f"Invalid epochs {self.epochs}")
@@ -207,6 +145,8 @@ class Classification:
     self.train_losses = self.train_losses[:self.epochs]
     self.val_losses = self.val_losses[:self.epochs]
     self.classification_accuracies = self.classification_accuracies[:self.epochs]
+
+    return self.earlyStopping.best_value, self.earlyStopping.best_model_state
 
   def save_model_state(self, save_path: str):
     """Save the state dictionary of the model to the specified path."""

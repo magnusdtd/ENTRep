@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from classification.classification import Classification
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from utils.focal_loss import FocalLoss
 
 class ResNet(Classification):
   def __init__(
@@ -33,3 +34,6 @@ class ResNet(Classification):
     model.model.load_state_dict(torch.load(model_path, map_location=model.device))
     model.model.eval()
     return model
+  
+  def load_state_dict(self, model_state_dict):
+    self.model.load_state_dict(model_state_dict)
