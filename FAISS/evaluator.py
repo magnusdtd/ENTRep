@@ -1,5 +1,4 @@
 import numpy as np
-from collections import Counter
 
 class Evaluator:
   @staticmethod
@@ -21,25 +20,19 @@ class Evaluator:
     topk_indices = np.asarray(topk_indices)[:, :k]
 
     correct_retrievals = 0
-    
-    # Pre-compute number of relevant images per query label in the gallery
-    label_counts = Counter(gallery_labels.tolist())
 
     for i, query_label in enumerate(query_labels):
-      # Number of relevant items in the gallery for this query
-      num_relevant_in_gallery = label_counts[query_label]
-
       # Top-k retrieved labels for this query
       retrieved_labels = gallery_labels[topk_indices[i]]
       print(f"i = {i}, query_label = {query_label}: retrieved_labels {retrieved_labels}")
       num_relevant_in_topk = np.sum(retrieved_labels == query_label)
 
-      # Recall for this query: relevant@k / relevant in dataset
-      recall = num_relevant_in_topk / num_relevant_in_gallery if num_relevant_in_gallery > 0 else 0
-      print(f"recall = {recall} = {num_relevant_in_topk} / {num_relevant_in_gallery}")
+      # Recall for this query: relevant@k / total images in query
+      recall = num_relevant_in_topk / k
+      print(f"recall = {recall} = {num_relevant_in_topk} / {k}")
       correct_retrievals += recall
 
-      return correct_retrievals / len(query_labels)
+    return correct_retrievals / len(query_labels)
 
   @staticmethod
   def evaluate_recall_at_k(index, features, query_labels, K_values=[1, 5, 10]):
