@@ -1,10 +1,10 @@
 from sklearn.model_selection import StratifiedKFold
 import pandas as pd
-import torch
 from torch.utils.data import DataLoader
 from classification.dataset import ENTRepDataset
 from classification.transform import get_transform
 import matplotlib.pyplot as plt
+from copy import deepcopy
 
 class K_Fold:
   def __init__(
@@ -33,7 +33,6 @@ class K_Fold:
     self.accuracies = []
 
   def run(self):
-
     for fold, (train_idx, val_idx) in enumerate(self.skf.split(self.df, self.df['Classification'])):
       print(f"Fold {fold + 1}/{self.k}")
       
@@ -46,7 +45,9 @@ class K_Fold:
       train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
       val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False)
 
-      fold_accuracy, fold_model_state_dict = self.model.fine_tune(
+      fold_model = deepcopy(self.model)
+
+      fold_accuracy, fold_model_state_dict = fold_model.fine_tune(
         train_loader,
         val_loader,
         epochs=self.epochs,
@@ -58,9 +59,12 @@ class K_Fold:
         self.best_model_state_dict = fold_model_state_dict
 
       self.fold_results.append(fold_accuracy)
-      self.train_losses.append(self.model.train_losses)
-      self.val_losses.append(self.model.val_losses)
-      self.accuracies.append(self.model.accuracies)
+
+      # Ensure train_losses, val_losses, and accuracies are padded to match the number of epochs
+      max_epochs = self.epochs
+      self.train_losses.append(fold_model.train_losses + [None] * (max_epochs - len(fold_model.train_losses)))
+      self.val_losses.append(fold_model.val_losses + [None] * (max_epochs - len(fold_model.val_losses)))
+      self.accuracies.append(fold_model.classification_accuracies + [None] * (max_epochs - len(fold_model.classification_accuracies)))
 
     print("K-Fold Cross-Validation Results:", self.fold_results)
     print("Average Accuracy:", sum(self.fold_results) / len(self.fold_results))
@@ -68,6 +72,7 @@ class K_Fold:
   def get_best_model_state_dict(self):
     return self.best_model_state_dict
   
+  # Handle None values in plotting by skipping them
   def show_learning_curves(self):
     if not self.fold_results:
         raise ValueError("No fold results available to plot.")
@@ -77,7 +82,8 @@ class K_Fold:
 
     # Plot training losses for each fold
     for fold_idx in range(num_folds):
-        axes[0, 0].plot(range(1, self.epochs + 1), self.train_losses[fold_idx], label=f"Fold {fold_idx + 1}", marker="o")
+        valid_train_losses = [loss for loss in self.train_losses[fold_idx] if loss is not None]
+        axes[0, 0].plot(range(1, len(valid_train_losses) + 1), valid_train_losses, label=f"Fold {fold_idx + 1}", marker="o")
     axes[0, 0].set_title("Training Loss")
     axes[0, 0].set_xlabel("Epochs")
     axes[0, 0].set_ylabel("Loss")
@@ -86,7 +92,8 @@ class K_Fold:
 
     # Plot validation losses for each fold
     for fold_idx in range(num_folds):
-        axes[0, 1].plot(range(1, self.epochs + 1), self.val_losses[fold_idx], label=f"Fold {fold_idx + 1}", marker="o")
+        valid_val_losses = [loss for loss in self.val_losses[fold_idx] if loss is not None]
+        axes[0, 1].plot(range(1, len(valid_val_losses) + 1), valid_val_losses, label=f"Fold {fold_idx + 1}", marker="o")
     axes[0, 1].set_title("Validation Loss")
     axes[0, 1].set_xlabel("Epochs")
     axes[0, 1].set_ylabel("Loss")
@@ -95,7 +102,8 @@ class K_Fold:
 
     # Plot accuracies for each fold
     for fold_idx in range(num_folds):
-        axes[1, 0].plot(range(1, self.epochs + 1), self.accuracies[fold_idx], label=f"Fold {fold_idx + 1}", marker="o")
+        valid_accuracies = [accuracy for accuracy in self.accuracies[fold_idx] if accuracy is not None]
+        axes[1, 0].plot(range(1, len(valid_accuracies) + 1), valid_accuracies, label=f"Fold {fold_idx + 1}", marker="o")
     axes[1, 0].set_title("Accuracy")
     axes[1, 0].set_xlabel("Epochs")
     axes[1, 0].set_ylabel("Accuracy")
