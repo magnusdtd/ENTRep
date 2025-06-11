@@ -196,3 +196,5 @@ cython_debug/
 *.zip
 Dataset/
 *.pth
+*.pt
+model_weights/
