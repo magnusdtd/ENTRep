@@ -3,14 +3,16 @@ from PIL import Image
 import open_clip
 import time
 import os
+import matplotlib.pyplot as plt
 
 def cls_inference():
-  device = torch.device("cuda:x" if torch.cuda.is_available() else "cpu")
+  device = "cuda" if torch.cuda.is_available() else "cpu"
   model_path = "pure_bioclip/open_clip_pytorch_model.bin"
   model_name = "hf-hub:imageomics/bioclip"
   model, _, preprocess_val = open_clip.create_model_and_transforms(model_name, pretrained=model_path)
   tokenizer = open_clip.get_tokenizer(model_name)
-
+  
+  model.to(device)
   model.eval()
 
   labels = [
@@ -48,10 +50,13 @@ def cls_inference():
   best_labels = [labels[idx] for idx in best_match_idx]
   print("Best match labels:", best_labels)
 
-  Image.open(img_path).show()
+  img = Image.open(img_path)
+  plt.imshow(img)
+  plt.axis('off')
+  plt.show()
 
 def t2i_inference():
-  device = torch.device("cuda:x" if torch.cuda.is_available() else "cpu")
+  device = "cuda" if torch.cuda.is_available() else "cpu"
   model_path = "pure_bioclip/open_clip_pytorch_model.bin"
   model_name = "hf-hub:imageomics/bioclip"
 
@@ -63,6 +68,7 @@ def t2i_inference():
   # Load BioCLIP model and tokenizer
   model, _, preprocess_val = open_clip.create_model_and_transforms(model_name, pretrained=model_path)
   tokenizer = open_clip.get_tokenizer(model_name)
+  model.to(device)
 
   # Preprocess text queries
   text_tokens = tokenizer(text_queries).to(device)
@@ -74,10 +80,6 @@ def t2i_inference():
     image_tensor = preprocess_val(Image.open(image_path)).unsqueeze(0).to(device)
 
     with torch.no_grad():
-      if torch.cuda.is_available():
-        with torch.autocast("cuda"):
-          image_features = model.encode_image(image_tensor)
-      else:
           image_features = model.encode_image(image_tensor)
 
     image_features /= image_features.norm(dim=-1, keepdim=True)
@@ -88,6 +90,7 @@ def t2i_inference():
   with torch.no_grad():
     text_features = model.encode_text(text_tokens)
     text_features /= text_features.norm(dim=-1, keepdim=True)
+    text_features = text_features.float()
 
     for i, text_query in enumerate(text_queries):
       similarities = {}
@@ -99,6 +102,13 @@ def t2i_inference():
       predictions[text_query] = best_match_image
 
   print(predictions)
+  for caption, img_name in predictions.items():
+    img_path = os.path.join("Dataset/train/imgs", img_name)
+    img = Image.open(img_path)
+    plt.imshow(img)
+    plt.axis('off')
+    plt.title(caption)
+    plt.show()
 
 if __name__ == "__main__":
   start_time = time.time()

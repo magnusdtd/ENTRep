@@ -200,3 +200,5 @@ Dataset/
 model_weights/
 pure_bioclip/
 open_clip/
+logs/
+*.log
