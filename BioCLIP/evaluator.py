@@ -27,7 +27,10 @@ class ImageToTextEvaluator:
 
     self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    self.model, _, self.preprocess_val = open_clip.create_model_and_transforms(model_name, pretrained=model_path)
+    if self.model_path:
+      self.model, _, self.preprocess_val = open_clip.create_model_and_transforms(self.model_name, pretrained=self.model_path)
+    else:
+      self.model, _, self.preprocess_val = open_clip.create_model_and_transforms(self.model_name)
     self.model.to(self.device)
     self.model.eval()
     self.tokenizer = open_clip.get_tokenizer(model_name)
@@ -126,12 +129,12 @@ class ImageToTextEvaluator:
 class TextToImageEvaluator:
   def __init__(
       self, 
-      df:pd.DataFrame, 
+      df: pd.DataFrame, 
       queries: dict[str], 
-      model_name:str, 
-      model_path:str,
-      path_column:str,
-      caption_column:str
+      model_name: str, 
+      model_path: str,
+      path_column: str,
+      caption_column: str
     ):
     '''
     The df contains paths to images at column 'Path'.
@@ -144,7 +147,10 @@ class TextToImageEvaluator:
     self.caption_column = caption_column
     self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    self.model, _, self.preprocess_val = open_clip.create_model_and_transforms(self.model_name, pretrained=self.model_path)
+    if self.model_path:
+      self.model, _, self.preprocess_val = open_clip.create_model_and_transforms(self.model_name, pretrained=self.model_path)
+    else:
+      self.model, _, self.preprocess_val = open_clip.create_model_and_transforms(self.model_name)
     self.model.to(self.device)
     self.model.eval()
     self.tokenizer = open_clip.get_tokenizer(self.model_name)

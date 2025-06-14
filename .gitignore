@@ -202,3 +202,4 @@ pure_bioclip/
 open_clip/
 logs/
 *.log
+bio-clip-ft/

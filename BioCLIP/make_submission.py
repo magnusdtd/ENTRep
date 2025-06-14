@@ -18,7 +18,10 @@ def make_submission_cls_task(
   test_df = pd.read_csv(test_file_path, header=None, names=['Path'])
 
   # Load BioCLIP model and tokenizer
-  model, _, preprocess_val = open_clip.create_model_and_transforms(model_name, pretrained=model_path)
+  if model_path:
+    model, _, preprocess_val = open_clip.create_model_and_transforms(model_name, pretrained=model_path)
+  else:
+    model, _, preprocess_val = open_clip.create_model_and_transforms(model_name)
   model.to(device)
   model.eval()
   tokenizer = open_clip.get_tokenizer(model_name)
@@ -67,7 +70,10 @@ def make_submission_t2i_task(
   test_df = pd.read_csv(test_file_path, header=None, names=['Query'])
 
   device = "cuda" if torch.cuda.is_available() else "cpu"
-  model, _, preprocess_val = open_clip.create_model_and_transforms(model_name, pretrained=model_path)
+  if model_path:
+    model, _, preprocess_val = open_clip.create_model_and_transforms(model_name, pretrained=model_path)
+  else:
+    model, _, preprocess_val = open_clip.create_model_and_transforms(model_name)
   model.to(device)
   model.eval()
   tokenizer = open_clip.get_tokenizer(model_name)
