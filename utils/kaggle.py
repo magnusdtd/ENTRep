@@ -1,4 +1,4 @@
-from utils.file import File
+from ENTRep.utils.file import File
 import os
 
 class Kaggle(File):
