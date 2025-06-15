@@ -98,6 +98,11 @@ class File:
         )
 
         File.copy_files(
+            "/kaggle/input/entrep-public-dataset",
+            "/kaggle/working/Dataset/public"
+        )
+
+        File.copy_files(
             "/kaggle/input/entrep-model-weights/pytorch/default/1/model_weights",
             "/kaggle/working/model_weights"
         )
