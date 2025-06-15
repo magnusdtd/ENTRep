@@ -47,7 +47,7 @@ class K_Fold:
 
       fold_model = deepcopy(self.model)
 
-      fold_accuracy, fold_model_state_dict = fold_model.fine_tune(
+      fold_accuracy = fold_model.fine_tune(
         train_loader,
         val_loader,
         epochs=self.epochs,
@@ -56,7 +56,7 @@ class K_Fold:
 
       if fold_accuracy > self.best_accuracy:
         self.best_accuracy = fold_accuracy
-        self.best_model_state_dict = fold_model_state_dict
+        self.best_model_state_dict = fold_model.earlyStopping.best_model_state
 
       self.fold_results.append(fold_accuracy)
 
