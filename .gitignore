@@ -197,4 +197,9 @@ cython_debug/
 Dataset/
 *.pth
 *.pt
+model_weights/
+pure_bioclip/
+open_clip/
 logs/
+*.log
+bio-clip-ft/
