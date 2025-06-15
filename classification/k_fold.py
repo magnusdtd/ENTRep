@@ -51,7 +51,7 @@ class K_Fold:
         train_loader,
         val_loader,
         epochs=self.epochs,
-        unfreeze_layers=['fc', 'layer4']
+        unfreeze_layers=self.unfreeze_layers
       )
 
       if fold_accuracy > self.best_accuracy:
