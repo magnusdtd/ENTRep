@@ -1,6 +1,5 @@
 from FAISS.feature_extractor import FeatureExtractor
 import torch.nn as nn
-from torchvision import models
 import torch
 
 class ResNet_FE(FeatureExtractor):

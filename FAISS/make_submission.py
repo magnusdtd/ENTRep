@@ -7,9 +7,9 @@ from torch.utils.data import DataLoader
 from FAISS.dataset import ENTRepDataset
 from FAISS.transform import get_transform
 from FAISS.faiss_indexer import FAISSIndexer
-from FAISS.ResNet import ResNet_FE
+from FAISS.feature_extractor import FeatureExtractor
 
-def make_submission(model_path:str, backbone, model_name:str, test_file_path: str, output_folder_path: str = './results'):
+def make_submission(feature_extractor: FeatureExtractor, model_name: str, test_file_path: str, output_folder_path: str = './results'):
     # Load test dataset
     test_df = pd.read_csv(test_file_path, header=None, names=['Path'])
     dataset = ENTRepDataset(
@@ -21,8 +21,6 @@ def make_submission(model_path:str, backbone, model_name:str, test_file_path: st
     dataloader = DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4)
 
     # Extract features
-    feature_extractor = ResNet_FE(backbone)
-    feature_extractor.load_model_state(model_path, backbone)
     features, paths = feature_extractor.extract_features(dataloader, True)
 
     # Build FAISS index

@@ -3,17 +3,16 @@ from FAISS.dataset import ENTRepDataset
 from torch.utils.data import DataLoader
 from FAISS.transform import get_transform
 from FAISS.faiss_indexer import FAISSIndexer
-from FAISS.ResNet import ResNet_FE
 from FAISS.evaluator import Evaluator
+from FAISS.feature_extractor import FeatureExtractor
 
 class Pipeline:
-  def __init__(self, dataset_path:str, class_feature_map:dict, backbone, model_path:str, batch_size=4, num_workers=4):
+  def __init__(self, dataset_path: str, class_feature_map: dict, feature_extractor: FeatureExtractor, batch_size=4, num_workers=4):
     self.dataset_path = dataset_path
     self.class_feature_map = class_feature_map
     self.batch_size = batch_size
     self.num_workers = num_workers
-    self.backbone = backbone
-    self.model_path = model_path
+    self.feature_extractor = feature_extractor
 
   def run(self):
     # Load dataset
@@ -23,10 +22,7 @@ class Pipeline:
     dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
     # Extract features
-    feature_extractor = ResNet_FE(self.backbone)
-    feature_extractor.load_model_state(self.model_path, self.backbone)
-    features, labels, paths = feature_extractor.extract_features(dataloader)
-    # (1291, 2048), 1291, 1291
+    features, labels, paths = self.feature_extractor.extract_features(dataloader)
 
     # Build FAISS index
     dim = features.shape[1]
