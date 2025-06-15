@@ -8,39 +8,40 @@ class SwinTransformerCLS(Classification):
         backbone,
         head_hidden_channel: int = 256,
         dropout_ratio: float = 0.4,
-        lr: float = 1e-3,
         num_classes: int = 7,
         earlyStopping_patience: int = 7,
         criterion=None,
         optimizer_class=torch.optim.Adam,
-        optimizer_kwargs=None,
         scheduler_class=torch.optim.lr_scheduler.ReduceLROnPlateau,
-        scheduler_kwargs=None
+        **kwargs
     ):
         super().__init__(num_classes, earlyStopping_patience)
 
-        self.model = backbone.to(self.device)
+        self.model = backbone.to(self.device).float()
         self.model.head = nn.Sequential(
             nn.Linear(self.model.head.in_features, head_hidden_channel),
             nn.ReLU(),
             nn.Dropout(dropout_ratio),
             nn.Linear(head_hidden_channel, self.num_classes)
-        ).to(self.device)
+        ).to(self.device).float()
 
         # Loss function
         if criterion is None:
-            self.classification_loss_fn = nn.CrossEntropyLoss().to(self.device)
+            class_weights = kwargs.get('class_weights', None)
+            if class_weights is not None:
+                class_weights = torch.tensor(class_weights, device=self.device).float()
+            self.classification_loss_fn = nn.CrossEntropyLoss(weight=class_weights).to(self.device).float()
         else:
-            self.classification_loss_fn = criterion.to(self.device)
+            self.classification_loss_fn = criterion.to(self.device).float()
 
         # Optimizer
-        if optimizer_kwargs is None:
-            optimizer_kwargs = {'lr': lr, 'weight_decay': 1e-4}
+        optimizer_kwargs = {'lr': 1e-3, 'weight_decay': 1e-4}
+        optimizer_kwargs.update(kwargs.get('optimizer_kwargs', {}))
         self.optimizer = optimizer_class(self.model.parameters(), **optimizer_kwargs)
 
         # Scheduler
-        if scheduler_kwargs is None:
-            scheduler_kwargs = {'mode': 'min', 'patience': 3}
+        scheduler_kwargs = {'mode': 'min', 'patience': 3}
+        scheduler_kwargs.update(kwargs.get('scheduler_kwargs', {}))
         self.scheduler = scheduler_class(self.optimizer, **scheduler_kwargs)
 
     @staticmethod

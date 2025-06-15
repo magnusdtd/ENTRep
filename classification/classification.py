@@ -138,6 +138,9 @@ class Classification:
       self.earlyStopping(self.model, classification_accuracy)
       if self.earlyStopping.early_stop:
         print("Early stopping triggered.")
+        # Load the best model state before breaking
+        if self.earlyStopping.best_model_state is not None:
+          self.model.load_state_dict(self.earlyStopping.best_model_state)
         self.epochs = epoch + 1
         break
 
@@ -146,7 +149,7 @@ class Classification:
     self.val_losses = self.val_losses[:self.epochs]
     self.classification_accuracies = self.classification_accuracies[:self.epochs]
 
-    return self.earlyStopping.best_value, self.earlyStopping.best_model_state
+    return self.earlyStopping.best_value
 
   def save_model_state(self, save_path: str):
     """Save the state dictionary of the model to the specified path."""
