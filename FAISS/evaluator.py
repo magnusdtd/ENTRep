@@ -24,12 +24,10 @@ class Evaluator:
     for i, query_label in enumerate(query_labels):
       # Top-k retrieved labels for this query
       retrieved_labels = gallery_labels[topk_indices[i]]
-      print(f"i = {i}, query_label = {query_label}: retrieved_labels {retrieved_labels}")
       num_relevant_in_topk = np.sum(retrieved_labels == query_label)
 
       # Recall for this query: relevant@k / total images in query
       recall = num_relevant_in_topk / k
-      print(f"recall = {recall} = {num_relevant_in_topk} / {k}")
       correct_retrievals += recall
 
     return correct_retrievals / len(query_labels)
