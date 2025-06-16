@@ -1,30 +1,28 @@
 import torch
 from torch import nn
 from classification.classification import Classification
-from torch.optim.lr_scheduler import ReduceLROnPlateau
-from utils.focal_loss import FocalLoss
 
 class ResNet(Classification):
     def __init__(
         self,
         backbone,
-        head_hidden_channel: int = 256,
+        hidden_channel: int = 256,
         dropout_ratio: float = 0.4,
         num_classes: int = 7,
         earlyStopping_patience: int = 7,
         criterion=None,
-        optimizer_class=torch.optim.Adam,
-        scheduler_class=torch.optim.lr_scheduler.ReduceLROnPlateau,
+        optimizer=torch.optim.Adam,
+        scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau,
         **kwargs
     ):
         super().__init__(num_classes, earlyStopping_patience)
-
+        self.hidden_channel = hidden_channel
         self.model = backbone.to(self.device).float()
         self.model.fc = nn.Sequential(
-            nn.Linear(self.model.fc.in_features, head_hidden_channel),
+            nn.Linear(self.model.fc.in_features, self.hidden_channel),
             nn.ReLU(),
             nn.Dropout(dropout_ratio),
-            nn.Linear(head_hidden_channel, self.num_classes)
+            nn.Linear(self.hidden_channel, self.num_classes)
         ).to(self.device).float()
 
         # Loss function
@@ -38,17 +36,23 @@ class ResNet(Classification):
 
         # Optimizer
         optimizer_kwargs = {'lr': 1e-3, 'weight_decay': 1e-4}
+        if optimizer == torch.optim.SGD:
+            optimizer_kwargs.update({'momentum': 0.9})
         optimizer_kwargs.update(kwargs.get('optimizer_kwargs', {}))
-        self.optimizer = optimizer_class(self.model.parameters(), **optimizer_kwargs)
+        self.optimizer = optimizer(self.model.parameters(), **optimizer_kwargs)
 
         # Scheduler
-        scheduler_kwargs = {'mode': 'min', 'patience': 3}
+        scheduler_kwargs = {}
+        if scheduler == torch.optim.lr_scheduler.ReduceLROnPlateau:
+            scheduler_kwargs.update({'mode': 'min', 'patience': 3})
+        elif scheduler == torch.optim.lr_scheduler.CosineAnnealingLR:
+            scheduler_kwargs.update({'T_max': kwargs.get('T_max', 50)})
         scheduler_kwargs.update(kwargs.get('scheduler_kwargs', {}))
-        self.scheduler = scheduler_class(self.optimizer, **scheduler_kwargs)
+        self.scheduler = scheduler(self.optimizer, **scheduler_kwargs)
 
     @staticmethod
     def load_model(model_path: str, backbone):
-        model = ResNet(backbone=backbone)
+        model = ResNet(backbone=backbone, hidden_channel=ResNet.hidden_channel)
         model.model.load_state_dict(torch.load(model_path, map_location=model.device))
         model.model.eval()
         return model
