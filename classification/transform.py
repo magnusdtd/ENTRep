@@ -8,29 +8,27 @@ from PIL import Image
 from torch.utils.data import DataLoader
 import os
 
-def get_transform(train:bool=True, image_size:Tuple[int, int]=(640, 480)):
+def get_transform(train: bool = True, image_size: Tuple[int, int] = (640, 480)):
     transforms_list = []
     if train:
         transforms_list.extend([
-            A.Affine(translate_percent=0.05, scale=(0.9, 1.1), rotate=(-10, 10), p=0.5),
-
+            A.HorizontalFlip(p=0.5),
+            A.Affine(translate_percent=0.05, scale=(0.8, 1.2), rotate=(-30, 30), p=0.5),
             A.OneOf([
                 A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=1.0),
                 A.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=20, val_shift_limit=10, p=1.0),
                 A.RandomGamma(gamma_limit=(80, 120), p=1.0),
             ], p=0.5),
-
             A.OneOf([
                 A.GaussianBlur(blur_limit=(1, 3), sigma_limit=(0.1, 2.0), p=1.0),
                 A.GaussNoise(p=1.0)
             ], p=0.5),
-
+            A.OpticalDistortion(distort_limit=0.05, p=0.3),
+            A.MotionBlur(blur_limit=7, p=0.3),
+            A.RandomToneCurve(scale=0.1, p=0.3),
             A.ElasticTransform(alpha=1, sigma=50, p=0.5),
-
             A.GridDistortion(num_steps=5, distort_limit=0.3, p=0.5),
-
             A.CoarseDropout(num_holes_range=(1, 5), p=0.5),
-
             A.CLAHE(clip_limit=4.0, tile_grid_size=(8, 8), p=0.5)
         ])
     transforms_list.extend([
