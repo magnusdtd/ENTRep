@@ -38,7 +38,7 @@ def get_transform(train: bool = True, image_size: Tuple[int, int] = (640, 480)):
     ])
     return A.Compose(transforms_list)
 
-def visualize_sample(dataloader: DataLoader, class_feature_map: dict):
+def visualize_sample(img_folder_path: str, dataloader: DataLoader, class_feature_map: dict):
     images, labels = next(iter(dataloader))
     batch_size = min(len(images), 9)
 
@@ -55,7 +55,7 @@ def visualize_sample(dataloader: DataLoader, class_feature_map: dict):
         image_tensor = images[i]
         _class = int(labels["class"][i])
         img_name = labels["filename"][i]
-        img_path = os.path.join('Dataset/train/imgs', img_name)
+        img_path = os.path.join(img_folder_path, img_name)
         img = Image.open(img_path).convert('RGB')
 
         class_name = inv_class_feature_map[_class]
