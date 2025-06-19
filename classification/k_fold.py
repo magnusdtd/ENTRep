@@ -15,7 +15,8 @@ class K_Fold:
       class_feature_map:dict,
       epochs: int,
       unfreeze_layers:list[str],
-      batch_size:int = 4
+      batch_size:int = 4,
+      img_path = 'Dataset/train/imgs'
     ):
     self.k = k
     self.skf = StratifiedKFold(n_splits=k, shuffle=True, random_state=42)
@@ -31,6 +32,7 @@ class K_Fold:
     self.train_losses = []
     self.val_losses = []
     self.accuracies = []
+    self.img_path = img_path
 
   def run(self):
     for fold, (train_idx, val_idx) in enumerate(self.skf.split(self.df, self.df['Classification'])):
@@ -39,8 +41,18 @@ class K_Fold:
       train_df = self.df.iloc[train_idx]
       val_df = self.df.iloc[val_idx]
 
-      train_dataset = ENTRepDataset(train_df, self.class_feature_map, transform=get_transform(train=True))
-      val_dataset = ENTRepDataset(val_df, self.class_feature_map, transform=get_transform(train=False))
+      train_dataset = ENTRepDataset(
+         train_df, 
+         self.class_feature_map, 
+         img_path=self.img_path, 
+         transform=get_transform(train=True)
+      )
+      val_dataset = ENTRepDataset(
+         val_df, 
+         self.class_feature_map, 
+         img_path=self.img_path, 
+         transform=get_transform(train=False)
+      )
 
       train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
       val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False)
