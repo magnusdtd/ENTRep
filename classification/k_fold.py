@@ -16,7 +16,9 @@ class K_Fold:
       epochs: int,
       unfreeze_layers:list[str],
       batch_size:int = 4,
-      img_path = 'Dataset/train/imgs'
+      img_path = 'Dataset/train/imgs',
+      use_mixup: bool = False,
+      use_cutmix: bool = False
     ):
     self.k = k
     self.skf = StratifiedKFold(n_splits=k, shuffle=True, random_state=42)
@@ -33,6 +35,8 @@ class K_Fold:
     self.val_losses = []
     self.accuracies = []
     self.img_path = img_path
+    self.use_mixup = use_mixup
+    self.use_cutmix = use_cutmix
 
   def run(self):
     for fold, (train_idx, val_idx) in enumerate(self.skf.split(self.df, self.df['Classification'])):
@@ -63,7 +67,9 @@ class K_Fold:
         train_loader,
         val_loader,
         epochs=self.epochs,
-        unfreeze_layers=self.unfreeze_layers
+        unfreeze_layers=self.unfreeze_layers,
+        use_mixup=self.use_mixup,
+        use_cutmix=self.use_cutmix
       )
 
       if fold_accuracy > self.best_accuracy:
@@ -95,7 +101,7 @@ class K_Fold:
     # Plot training losses for each fold
     for fold_idx in range(num_folds):
         valid_train_losses = [loss for loss in self.train_losses[fold_idx] if loss is not None]
-        axes[0, 0].plot(range(1, len(valid_train_losses) + 1), valid_train_losses, label=f"Fold {fold_idx + 1}", marker="o")
+        axes[0, 0].plot(range(1, len(valid_train_losses) + 1), valid_train_losses, label=f"Fold {fold_idx + 1}")
     axes[0, 0].set_title("Training Loss")
     axes[0, 0].set_xlabel("Epochs")
     axes[0, 0].set_ylabel("Loss")
@@ -105,7 +111,7 @@ class K_Fold:
     # Plot validation losses for each fold
     for fold_idx in range(num_folds):
         valid_val_losses = [loss for loss in self.val_losses[fold_idx] if loss is not None]
-        axes[0, 1].plot(range(1, len(valid_val_losses) + 1), valid_val_losses, label=f"Fold {fold_idx + 1}", marker="o")
+        axes[0, 1].plot(range(1, len(valid_val_losses) + 1), valid_val_losses, label=f"Fold {fold_idx + 1}")
     axes[0, 1].set_title("Validation Loss")
     axes[0, 1].set_xlabel("Epochs")
     axes[0, 1].set_ylabel("Loss")
@@ -115,7 +121,7 @@ class K_Fold:
     # Plot accuracies for each fold
     for fold_idx in range(num_folds):
         valid_accuracies = [accuracy for accuracy in self.accuracies[fold_idx] if accuracy is not None]
-        axes[1, 0].plot(range(1, len(valid_accuracies) + 1), valid_accuracies, label=f"Fold {fold_idx + 1}", marker="o")
+        axes[1, 0].plot(range(1, len(valid_accuracies) + 1), valid_accuracies, label=f"Fold {fold_idx + 1}")
     axes[1, 0].set_title("Accuracy")
     axes[1, 0].set_xlabel("Epochs")
     axes[1, 0].set_ylabel("Accuracy")
