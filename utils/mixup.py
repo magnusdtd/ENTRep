@@ -24,8 +24,8 @@ def cutmix_data(x, y, alpha=1.0):
 
     # Create a random cut box
     cut_rat = np.sqrt(1. - lam)
-    cut_w = np.int(w * cut_rat)
-    cut_h = np.int(h * cut_rat)
+    cut_w = int(w * cut_rat)
+    cut_h = int(h * cut_rat)
 
     # Choose random center position
     cx = np.random.randint(w)
