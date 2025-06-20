@@ -8,7 +8,7 @@ from PIL import Image
 from torch.utils.data import DataLoader
 import os
 
-def get_transform(train: bool = True, image_size: Tuple[int, int] = (640, 480)):
+def get_transform(train: bool = True, image_size: Tuple[int, int] = (480, 640)):
     transforms_list = []
     if train:
         transforms_list.extend([
