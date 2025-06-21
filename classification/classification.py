@@ -13,7 +13,12 @@ class Classification:
   def __init__(
       self,
       num_classes: int = 7,
-      earlyStopping_patience: int = 7
+      earlyStopping_patience: int = 7,
+      use_mixup = False,
+      mixup_alpha = 0.4,
+      use_cutmix = False,
+      cutmix_alpha = 1.0,
+      adv_aug_prob = 0.5
 ):
     self.num_classes = num_classes
 
@@ -31,6 +36,12 @@ class Classification:
     self.classification_loss_fn = None
     self.optimizer = None
     self.scheduler = None
+
+    self.use_mixup = use_mixup 
+    self.mixup_alpha = mixup_alpha
+    self.use_cutmix = use_cutmix 
+    self.cutmix_alpha = cutmix_alpha
+    self.adv_aug_prob = adv_aug_prob
 
   def forward(self, images: torch.Tensor):
     images = images.to(self.device)
@@ -63,16 +74,25 @@ class Classification:
     plt.tight_layout()
     plt.show()
 
+  def _apply_augmentation(self, images, labels_class):
+    if  self.use_mixup and self.use_cutmix:
+      if np.random.rand() < 0.5:
+        return mixup_data(images, labels_class, alpha=self.mixup_alpha)
+      else:
+        return cutmix_data(images, labels_class, alpha=self.cutmix_alpha)
+    elif self.use_mixup:
+      return mixup_data(images, labels_class, alpha=self.mixup_alpha)
+    elif self.use_cutmix:
+      return cutmix_data(images, labels_class, alpha=self.cutmix_alpha)
+    else:
+      return images, labels_class, labels_class, 1.0
+
   def fine_tune(
       self, 
       train_loader: DataLoader, 
       val_loader: DataLoader, 
       epochs: int = 10, 
-      unfreeze_layers: list = None, 
-      use_mixup: bool = False, 
-      mixup_alpha: float = 0.4, 
-      use_cutmix: bool = False, 
-      cutmix_alpha: float = 1.0
+      unfreeze_layers: list = None,
   ):
     """
     Fine-tune the model with early stopping and layer unfreezing.
@@ -81,10 +101,6 @@ class Classification:
         val_loader (DataLoader): Validation data loader.
         epochs (int): Number of epochs for fine-tuning.
         unfreeze_layers (list): List of layer names to unfreeze.
-        use_mixup (bool): Use MixUp augmentation if True.
-        mixup_alpha (float): MixUp alpha parameter.
-        use_cutmix (bool): Use CutMix augmentation if True.
-        cutmix_alpha (float): CutMix alpha parameter.
     """
     if unfreeze_layers:
       unfreeze_model_layers(self.model, unfreeze_layers)
@@ -105,20 +121,9 @@ class Classification:
 
         self.optimizer.zero_grad()
 
-        # ugmentation
-        if use_mixup and use_cutmix:
-          if np.random.rand() < 0.5:
-            mixed_images, targets_a, targets_b, lam = mixup_data(images, labels_class, alpha=mixup_alpha)
-          else:
-            mixed_images, targets_a, targets_b, lam = cutmix_data(images, labels_class, alpha=cutmix_alpha)
-          outputs = self.forward(mixed_images)
-          loss = lam * self.classification_loss_fn(outputs, targets_a) + (1 - lam) * self.classification_loss_fn(outputs, targets_b)
-        elif use_mixup:
-          mixed_images, targets_a, targets_b, lam = mixup_data(images, labels_class, alpha=mixup_alpha)
-          outputs = self.forward(mixed_images)
-          loss = lam * self.classification_loss_fn(outputs, targets_a) + (1 - lam) * self.classification_loss_fn(outputs, targets_b)
-        elif use_cutmix:
-          mixed_images, targets_a, targets_b, lam = cutmix_data(images, labels_class, alpha=cutmix_alpha)
+        # Augmentation
+        if np.random.random() < self.adv_aug_prob and (self.use_mixup or self.use_cutmix):
+          mixed_images, targets_a, targets_b, lam = self._apply_augmentation(images, labels_class)
           outputs = self.forward(mixed_images)
           loss = lam * self.classification_loss_fn(outputs, targets_a) + (1 - lam) * self.classification_loss_fn(outputs, targets_b)
         else:

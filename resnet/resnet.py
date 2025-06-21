@@ -13,9 +13,22 @@ class ResNet(Classification):
         criterion=None,
         optimizer=torch.optim.Adam,
         scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau,
+        use_mixup = False,
+        mixup_alpha = 0.4,
+        use_cutmix = False,
+        cutmix_alpha = 1.0,
+        adv_aug_prob = 0.5,
         **kwargs
     ):
-        super().__init__(num_classes, earlyStopping_patience)
+        super().__init__(
+            num_classes, 
+            earlyStopping_patience,
+            use_mixup,
+            mixup_alpha,
+            use_cutmix,
+            cutmix_alpha,
+            adv_aug_prob,
+        )
         self.hidden_channel = hidden_channel
         self.model = backbone.to(self.device).float()
         self.model.fc = nn.Sequential(
