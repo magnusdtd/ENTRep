@@ -16,9 +16,7 @@ class K_Fold:
       epochs: int,
       unfreeze_layers:list[str],
       batch_size:int = 4,
-      img_path = 'Dataset/train/imgs',
-      use_mixup: bool = False,
-      use_cutmix: bool = False
+      img_path = 'Dataset/train/imgs'
     ):
     self.k = k
     self.skf = StratifiedKFold(n_splits=k, shuffle=True, random_state=42)
@@ -35,8 +33,6 @@ class K_Fold:
     self.val_losses = []
     self.accuracies = []
     self.img_path = img_path
-    self.use_mixup = use_mixup
-    self.use_cutmix = use_cutmix
 
   def run(self):
     for fold, (train_idx, val_idx) in enumerate(self.skf.split(self.df, self.df['Classification'])):
@@ -67,9 +63,7 @@ class K_Fold:
         train_loader,
         val_loader,
         epochs=self.epochs,
-        unfreeze_layers=self.unfreeze_layers,
-        use_mixup=self.use_mixup,
-        use_cutmix=self.use_cutmix
+        unfreeze_layers=self.unfreeze_layers
       )
 
       if fold_accuracy > self.best_accuracy:
