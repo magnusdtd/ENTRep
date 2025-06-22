@@ -26,8 +26,6 @@ def get_transform(train: bool = True, image_size: Tuple[int, int] = (480, 640)):
             A.OpticalDistortion(distort_limit=0.05, p=0.3),
             A.MotionBlur(blur_limit=7, p=0.3),
             A.RandomToneCurve(scale=0.1, p=0.3),
-            A.ElasticTransform(alpha=1, sigma=50, p=0.5),
-            A.GridDistortion(num_steps=5, distort_limit=0.3, p=0.5),
             A.CoarseDropout(num_holes_range=(1, 5), p=0.5),
             A.CLAHE(clip_limit=4.0, tile_grid_size=(8, 8), p=0.5)
         ])
