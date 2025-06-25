@@ -2,7 +2,7 @@ import numpy as np
 
 class Evaluator:
   @staticmethod
-  def recall_at_k(query_labels: np.array, gallery_labels: np.array, topk_indices: np.array, k):
+  def _recall_at_k(query_labels: np.array, gallery_labels: np.array, topk_indices: np.array, k: int):
     """
     Calculate Recall@K for a retrieval system.
     
@@ -40,7 +40,7 @@ class Evaluator:
       _, indices, _, _ = index.search(features, max(K_values))
 
       for k in K_values:
-        recalls[k] = Evaluator.recall_at_k(
+        recalls[k] = Evaluator._recall_at_k(
           query_labels=query_labels,    # (n_queries,) = (1291,)
           gallery_labels=index.labels,  # (n_gallery,) = (1291,)
           topk_indices=indices,         # (n_queries, K) = (1291, K)
