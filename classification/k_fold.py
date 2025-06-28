@@ -170,7 +170,7 @@ class K_Fold:
 
     # Plot fold comparison
     fold_numbers = list(range(1, num_folds + 1))
-    axes[1, 1].bar(fold_numbers, self.fold_results, alpha=0.7, color='skyblue')
+    axes[1, 1].bar(fold_numbers, self.fold_results, alpha=0.7)
     axes[1, 1].axhline(y=sum(self.fold_results) / len(self.fold_results), 
                        color='red', linestyle='--', label='Average')
     axes[1, 1].set_title("Fold Performance Comparison")
