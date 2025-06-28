@@ -84,8 +84,7 @@ class K_Fold:
   def get_best_model_state_dict(self):
     return self.best_model_state_dict
   
-  # Handle None values in plotting by skipping them
-  def show_learning_curves(self):
+  def show_learning_curves(self, save_path=None):
     if not self.fold_results:
         raise ValueError("No fold results available to plot.")
 
@@ -124,4 +123,7 @@ class K_Fold:
 
     # Adjust layout
     plt.tight_layout()
+    if save_path is not None:
+        plt.savefig(save_path)
+        print(f"Learning curve figure saved to {save_path}")
     plt.show()

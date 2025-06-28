@@ -48,11 +48,11 @@ class Classification:
     outputs = self.model(images)
     return outputs
 
-  def show_learning_curves(self):
+  def show_learning_curves(self, save_path: str = None):
     if self.epochs <= 0:
       raise ValueError(f"Invalid epochs {self.epochs}")
 
-    _, axes = plt.subplots(1, 2, figsize=(16, 6))
+    fig, axes = plt.subplots(1, 2, figsize=(16, 6))
 
     # Plot learning curves
     axes[0].plot(range(1, self.epochs + 1), self.train_losses, label="Training Loss")
@@ -72,6 +72,8 @@ class Classification:
     axes[1].grid(True)
 
     plt.tight_layout()
+    if save_path is not None:
+      fig.savefig(save_path)
     plt.show()
 
   def _apply_augmentation(self, images, labels_class):
