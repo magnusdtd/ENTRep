@@ -2,40 +2,27 @@ import torch
 from torch import nn
 from classification.classification import Classification
 
-class SwinTransformer(Classification):
+class SwinTransformerCLS(Classification):
     def __init__(
         self,
         backbone,
-        hidden_channel: int = 256,
+        head_hidden_channel: int = 256,
         dropout_ratio: float = 0.4,
         num_classes: int = 7,
         earlyStopping_patience: int = 7,
         criterion=None,
-        optimizer=torch.optim.Adam,
-        scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau,
-        use_mixup = False,
-        mixup_alpha = 0.4,
-        use_cutmix = False,
-        cutmix_alpha = 1.0,
-        adv_aug_prob = 0.5,
+        optimizer_class=torch.optim.Adam,
+        scheduler_class=torch.optim.lr_scheduler.ReduceLROnPlateau,
         **kwargs
     ):
-        super().__init__(
-            num_classes, 
-            earlyStopping_patience,
-            use_mixup,
-            mixup_alpha,
-            use_cutmix,
-            cutmix_alpha,
-            adv_aug_prob,
-        )
+        super().__init__(num_classes, earlyStopping_patience)
 
         self.model = backbone.to(self.device).float()
         self.model.head = nn.Sequential(
-            nn.Linear(self.model.head.in_features, hidden_channel),
+            nn.Linear(self.model.head.in_features, head_hidden_channel),
             nn.ReLU(),
             nn.Dropout(dropout_ratio),
-            nn.Linear(hidden_channel, self.num_classes)
+            nn.Linear(head_hidden_channel, self.num_classes)
         ).to(self.device).float()
 
         # Loss function
@@ -49,23 +36,17 @@ class SwinTransformer(Classification):
 
         # Optimizer
         optimizer_kwargs = {'lr': 1e-3, 'weight_decay': 1e-4}
-        if optimizer == torch.optim.SGD:
-            optimizer_kwargs.update({'momentum': 0.9})
         optimizer_kwargs.update(kwargs.get('optimizer_kwargs', {}))
-        self.optimizer = optimizer(self.model.parameters(), **optimizer_kwargs)
+        self.optimizer = optimizer_class(self.model.parameters(), **optimizer_kwargs)
 
         # Scheduler
-        scheduler_kwargs = {}
-        if scheduler == torch.optim.lr_scheduler.ReduceLROnPlateau:
-            scheduler_kwargs.update({'mode': 'min', 'patience': 3})
-        elif scheduler == torch.optim.lr_scheduler.CosineAnnealingLR:
-            scheduler_kwargs.update({'T_max': kwargs.get('T_max', 50)})
+        scheduler_kwargs = {'mode': 'min', 'patience': 3}
         scheduler_kwargs.update(kwargs.get('scheduler_kwargs', {}))
-        self.scheduler = scheduler(self.optimizer, **scheduler_kwargs)
+        self.scheduler = scheduler_class(self.optimizer, **scheduler_kwargs)
 
     @staticmethod
     def load_model(model_path: str, backbone):
-        model = SwinTransformer(backbone=backbone)
+        model = SwinTransformerCLS(backbone=backbone)
         model.model.load_state_dict(torch.load(model_path, map_location=model.device))
         model.model.eval()
         return model
