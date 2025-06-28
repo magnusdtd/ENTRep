@@ -66,12 +66,12 @@ class EfficientNet(Classification):
     scheduler_kwargs.update(kwargs.get('scheduler_kwargs', {}))
     self.scheduler = scheduler(self.optimizer, **scheduler_kwargs)
 
-    @staticmethod
-    def load_model(model_path: str, backbone, hidden_channel: int):
-        model = EfficientNet(backbone=backbone, hidden_channel=hidden_channel)
-        model.model.load_state_dict(torch.load(model_path, map_location=model.device))
-        model.model.eval()
-        return model
+  @staticmethod
+  def load_model(model_path: str, backbone, hidden_channel: int):
+      model = EfficientNet(backbone=backbone, hidden_channel=hidden_channel)
+      model.model.load_state_dict(torch.load(model_path, map_location=model.device))
+      model.model.eval()
+      return model
 
-    def load_state_dict(self, model_state_dict):
-        self.model.load_state_dict(model_state_dict)
+  def load_state_dict(self, model_state_dict):
+      self.model.load_state_dict(model_state_dict)
