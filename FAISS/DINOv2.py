@@ -2,9 +2,9 @@ from FAISS.feature_extractor import FeatureExtractor
 import torch
 from PIL import Image
 import numpy as np
-import os
 from typing import Tuple
 import torchvision.transforms as T
+from tqdm import tqdm
 
 class DINOv2_FE(FeatureExtractor):
   def __init__(
@@ -41,7 +41,7 @@ class DINOv2_FE(FeatureExtractor):
     all_paths = []
     
     with torch.no_grad():
-      for batch in dataloader:
+      for batch in tqdm(dataloader, desc="Extracting DINOv2 features"):
         if is_inference:
           _, img_paths = batch
           labels = None
@@ -70,4 +70,4 @@ class DINOv2_FE(FeatureExtractor):
     """
     with torch.no_grad():
       output = self.model(self.load_img(img_path).to(self.device))
-      return output[0].cpu().numpy() 
+      return output[0].cpu().numpy().reshape(1, -1)

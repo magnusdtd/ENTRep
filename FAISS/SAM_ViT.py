@@ -2,8 +2,8 @@ from FAISS.feature_extractor import FeatureExtractor
 import torch
 from PIL import Image
 import numpy as np
-import os
 import timm
+from tqdm import tqdm
 
 class SAM_ViT_FE(FeatureExtractor):
   def __init__(
@@ -25,7 +25,7 @@ class SAM_ViT_FE(FeatureExtractor):
     all_paths = []
     
     with torch.no_grad():
-      for batch in dataloader:
+      for batch in tqdm(dataloader, desc="Extracting SAM-ViT features"):
         if is_inference:
           _, img_paths = batch
           labels = None

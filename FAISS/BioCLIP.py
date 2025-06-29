@@ -3,7 +3,7 @@ import torch
 from PIL import Image
 import open_clip
 import numpy as np
-import os
+from tqdm import tqdm
 
 class BioCLIP_FE(FeatureExtractor):
   def __init__(
@@ -25,7 +25,7 @@ class BioCLIP_FE(FeatureExtractor):
     all_paths = []
     
     with torch.no_grad():
-      for batch in dataloader:
+      for batch in tqdm(dataloader, desc="Extracting BioCLIP features"):
         if is_inference:
           _, img_paths = batch
           labels = None
