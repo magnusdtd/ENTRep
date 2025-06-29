@@ -11,14 +11,12 @@ class DINOv2_FE(FeatureExtractor):
       self, 
       repo_name: str = 'facebookresearch/dinov2', 
       model_name:str='dinov2_vits14',
-      img_folder_path:str = 'Dataset/train/imgs',
       image_size: Tuple[int, int] = (490, 644)
     ):
     super().__init__()
     self.model = torch.hub.load(repo_name, model_name)
     self.model.to(self.device)
     self.model.eval()
-    self.img_folder_path = img_folder_path
     self.image_size = image_size
     
     self.preprocess = T.Compose([
@@ -45,13 +43,12 @@ class DINOv2_FE(FeatureExtractor):
     with torch.no_grad():
       for batch in dataloader:
         if is_inference:
-          _, img_names = batch
+          _, img_paths = batch
           labels = None
         else:
-          _, labels, img_names = batch
+          _, labels, img_paths = batch
 
-        for img_name in img_names:
-          img_path = os.path.join(self.img_folder_path, img_name)
+        for img_path in img_paths:
 
           output = self.model(self.load_img(img_path).to(self.device))
 
@@ -59,7 +56,7 @@ class DINOv2_FE(FeatureExtractor):
           
         if not is_inference:
           all_labels.extend(labels)
-        all_paths.extend(img_names)
+        all_paths.extend(img_paths)
 
       features = np.vstack(all_features).astype('float32')
       if is_inference:
