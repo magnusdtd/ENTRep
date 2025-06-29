@@ -15,7 +15,8 @@ class K_Fold:
       class_feature_map:dict,
       epochs: int,
       unfreeze_layers:list[str],
-      batch_size:int = 4
+      batch_size:int = 4,
+      img_path = 'Dataset/train/imgs'
     ):
     self.k = k
     self.skf = StratifiedKFold(n_splits=k, shuffle=True, random_state=42)
@@ -31,6 +32,7 @@ class K_Fold:
     self.train_losses = []
     self.val_losses = []
     self.accuracies = []
+    self.img_path = img_path
 
   def run(self):
     for fold, (train_idx, val_idx) in enumerate(self.skf.split(self.df, self.df['Classification'])):
@@ -39,8 +41,18 @@ class K_Fold:
       train_df = self.df.iloc[train_idx]
       val_df = self.df.iloc[val_idx]
 
-      train_dataset = ENTRepDataset(train_df, self.class_feature_map, transform=get_transform(train=True))
-      val_dataset = ENTRepDataset(val_df, self.class_feature_map, transform=get_transform(train=False))
+      train_dataset = ENTRepDataset(
+         train_df, 
+         self.class_feature_map, 
+         img_path=self.img_path, 
+         transform=get_transform(train=True)
+      )
+      val_dataset = ENTRepDataset(
+         val_df, 
+         self.class_feature_map, 
+         img_path=self.img_path, 
+         transform=get_transform(train=False)
+      )
 
       train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
       val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False)
@@ -72,8 +84,7 @@ class K_Fold:
   def get_best_model_state_dict(self):
     return self.best_model_state_dict
   
-  # Handle None values in plotting by skipping them
-  def show_learning_curves(self):
+  def show_learning_curves(self, save_path=None):
     if not self.fold_results:
         raise ValueError("No fold results available to plot.")
 
@@ -83,7 +94,7 @@ class K_Fold:
     # Plot training losses for each fold
     for fold_idx in range(num_folds):
         valid_train_losses = [loss for loss in self.train_losses[fold_idx] if loss is not None]
-        axes[0, 0].plot(range(1, len(valid_train_losses) + 1), valid_train_losses, label=f"Fold {fold_idx + 1}", marker="o")
+        axes[0, 0].plot(range(1, len(valid_train_losses) + 1), valid_train_losses, label=f"Fold {fold_idx + 1}")
     axes[0, 0].set_title("Training Loss")
     axes[0, 0].set_xlabel("Epochs")
     axes[0, 0].set_ylabel("Loss")
@@ -93,7 +104,7 @@ class K_Fold:
     # Plot validation losses for each fold
     for fold_idx in range(num_folds):
         valid_val_losses = [loss for loss in self.val_losses[fold_idx] if loss is not None]
-        axes[0, 1].plot(range(1, len(valid_val_losses) + 1), valid_val_losses, label=f"Fold {fold_idx + 1}", marker="o")
+        axes[0, 1].plot(range(1, len(valid_val_losses) + 1), valid_val_losses, label=f"Fold {fold_idx + 1}")
     axes[0, 1].set_title("Validation Loss")
     axes[0, 1].set_xlabel("Epochs")
     axes[0, 1].set_ylabel("Loss")
@@ -103,7 +114,7 @@ class K_Fold:
     # Plot accuracies for each fold
     for fold_idx in range(num_folds):
         valid_accuracies = [accuracy for accuracy in self.accuracies[fold_idx] if accuracy is not None]
-        axes[1, 0].plot(range(1, len(valid_accuracies) + 1), valid_accuracies, label=f"Fold {fold_idx + 1}", marker="o")
+        axes[1, 0].plot(range(1, len(valid_accuracies) + 1), valid_accuracies, label=f"Fold {fold_idx + 1}")
     axes[1, 0].set_title("Accuracy")
     axes[1, 0].set_xlabel("Epochs")
     axes[1, 0].set_ylabel("Accuracy")
@@ -112,4 +123,7 @@ class K_Fold:
 
     # Adjust layout
     plt.tight_layout()
+    if save_path is not None:
+        plt.savefig(save_path)
+        print(f"Learning curve figure saved to {save_path}")
     plt.show()

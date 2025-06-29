@@ -13,9 +13,22 @@ class ResNet(Classification):
         criterion=None,
         optimizer=torch.optim.Adam,
         scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau,
+        use_mixup = False,
+        mixup_alpha = 0.4,
+        use_cutmix = False,
+        cutmix_alpha = 1.0,
+        adv_aug_prob = 0.5,
         **kwargs
     ):
-        super().__init__(num_classes, earlyStopping_patience)
+        super().__init__(
+            num_classes, 
+            earlyStopping_patience,
+            use_mixup,
+            mixup_alpha,
+            use_cutmix,
+            cutmix_alpha,
+            adv_aug_prob,
+        )
         self.hidden_channel = hidden_channel
         self.model = backbone.to(self.device).float()
         self.model.fc = nn.Sequential(
@@ -51,8 +64,8 @@ class ResNet(Classification):
         self.scheduler = scheduler(self.optimizer, **scheduler_kwargs)
 
     @staticmethod
-    def load_model(model_path: str, backbone):
-        model = ResNet(backbone=backbone, hidden_channel=ResNet.hidden_channel)
+    def load_model(model_path: str, backbone, hidden_channel: int):
+        model = ResNet(backbone=backbone, hidden_channel=hidden_channel)
         model.model.load_state_dict(torch.load(model_path, map_location=model.device))
         model.model.eval()
         return model

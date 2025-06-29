@@ -8,7 +8,7 @@ from PIL import Image
 from torch.utils.data import DataLoader
 import os
 
-def get_transform(train: bool = True, image_size: Tuple[int, int] = (640, 480)):
+def get_transform(train: bool = True, image_size: Tuple[int, int] = (480, 640)):
     transforms_list = []
     if train:
         transforms_list.extend([
@@ -26,8 +26,6 @@ def get_transform(train: bool = True, image_size: Tuple[int, int] = (640, 480)):
             A.OpticalDistortion(distort_limit=0.05, p=0.3),
             A.MotionBlur(blur_limit=7, p=0.3),
             A.RandomToneCurve(scale=0.1, p=0.3),
-            A.ElasticTransform(alpha=1, sigma=50, p=0.5),
-            A.GridDistortion(num_steps=5, distort_limit=0.3, p=0.5),
             A.CoarseDropout(num_holes_range=(1, 5), p=0.5),
             A.CLAHE(clip_limit=4.0, tile_grid_size=(8, 8), p=0.5)
         ])
@@ -38,7 +36,7 @@ def get_transform(train: bool = True, image_size: Tuple[int, int] = (640, 480)):
     ])
     return A.Compose(transforms_list)
 
-def visualize_sample(dataloader: DataLoader, class_feature_map: dict):
+def visualize_sample(img_folder_path: str, dataloader: DataLoader, class_feature_map: dict):
     images, labels = next(iter(dataloader))
     batch_size = min(len(images), 9)
 
@@ -55,7 +53,7 @@ def visualize_sample(dataloader: DataLoader, class_feature_map: dict):
         image_tensor = images[i]
         _class = int(labels["class"][i])
         img_name = labels["filename"][i]
-        img_path = os.path.join('Dataset/train/imgs', img_name)
+        img_path = os.path.join(img_folder_path, img_name)
         img = Image.open(img_path).convert('RGB')
 
         class_name = inv_class_feature_map[_class]

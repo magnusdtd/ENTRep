@@ -5,13 +5,20 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 from utils.early_stopping import EarlyStopping
 from utils.unfreeze_layer import unfreeze_model_layers
+from utils.mixup import mixup_data, cutmix_data
+import numpy as np
 
 
 class Classification:
   def __init__(
       self,
       num_classes: int = 7,
-      earlyStopping_patience: int = 7
+      earlyStopping_patience: int = 7,
+      use_mixup = False,
+      mixup_alpha = 0.4,
+      use_cutmix = False,
+      cutmix_alpha = 1.0,
+      adv_aug_prob = 0.5
 ):
     self.num_classes = num_classes
 
@@ -30,20 +37,26 @@ class Classification:
     self.optimizer = None
     self.scheduler = None
 
+    self.use_mixup = use_mixup 
+    self.mixup_alpha = mixup_alpha
+    self.use_cutmix = use_cutmix 
+    self.cutmix_alpha = cutmix_alpha
+    self.adv_aug_prob = adv_aug_prob
+
   def forward(self, images: torch.Tensor):
     images = images.to(self.device)
     outputs = self.model(images)
     return outputs
 
-  def show_learning_curves(self):
+  def show_learning_curves(self, save_path: str = None):
     if self.epochs <= 0:
       raise ValueError(f"Invalid epochs {self.epochs}")
 
-    _, axes = plt.subplots(1, 2, figsize=(16, 6))
+    fig, axes = plt.subplots(1, 2, figsize=(16, 6))
 
     # Plot learning curves
-    axes[0].plot(range(1, self.epochs + 1), self.train_losses, label="Training Loss", marker="o")
-    axes[0].plot(range(1, self.epochs + 1), self.val_losses, label="Validation Loss", marker="o")
+    axes[0].plot(range(1, self.epochs + 1), self.train_losses, label="Training Loss")
+    axes[0].plot(range(1, self.epochs + 1), self.val_losses, label="Validation Loss")
     axes[0].set_xlabel("Epochs")
     axes[0].set_ylabel("Loss")
     axes[0].set_title("Learning Curve")
@@ -51,7 +64,7 @@ class Classification:
     axes[0].grid(True)
 
     # Plot classification accuracy
-    axes[1].plot(range(1, self.epochs + 1), self.classification_accuracies, label="Classification Accuracy", marker="o")
+    axes[1].plot(range(1, self.epochs + 1), self.classification_accuracies, label="Classification Accuracy")
     axes[1].set_xlabel("Epochs")
     axes[1].set_ylabel("Accuracy")
     axes[1].set_title("Accuracy Curve")
@@ -59,12 +72,32 @@ class Classification:
     axes[1].grid(True)
 
     plt.tight_layout()
+    if save_path is not None:
+      fig.savefig(save_path)
     plt.show()
 
-  def fine_tune(self, train_loader: DataLoader, val_loader: DataLoader, epochs: int = 10, unfreeze_layers: list = None):
+  def _apply_augmentation(self, images, labels_class):
+    if  self.use_mixup and self.use_cutmix:
+      if np.random.rand() < 0.5:
+        return mixup_data(images, labels_class, alpha=self.mixup_alpha)
+      else:
+        return cutmix_data(images, labels_class, alpha=self.cutmix_alpha)
+    elif self.use_mixup:
+      return mixup_data(images, labels_class, alpha=self.mixup_alpha)
+    elif self.use_cutmix:
+      return cutmix_data(images, labels_class, alpha=self.cutmix_alpha)
+    else:
+      return images, labels_class, labels_class, 1.0
+
+  def fine_tune(
+      self, 
+      train_loader: DataLoader, 
+      val_loader: DataLoader, 
+      epochs: int = 10, 
+      unfreeze_layers: list = None,
+  ):
     """
     Fine-tune the model with early stopping and layer unfreezing.
-
     Args:
         train_loader (DataLoader): Training data loader.
         val_loader (DataLoader): Validation data loader.
@@ -86,19 +119,24 @@ class Classification:
 
       for _, (images, labels) in train_progress_bar:
         images = images.to(self.device)
-        labels = labels['class']
-        labels = labels.to(self.device)
+        labels_class = labels['class'].to(self.device)
 
         self.optimizer.zero_grad()
 
-        outputs = self.forward(images)
-        classification_loss = self.classification_loss_fn(outputs, labels)
+        # Augmentation
+        if np.random.random() < self.adv_aug_prob and (self.use_mixup or self.use_cutmix):
+          mixed_images, targets_a, targets_b, lam = self._apply_augmentation(images, labels_class)
+          outputs = self.forward(mixed_images)
+          loss = lam * self.classification_loss_fn(outputs, targets_a) + (1 - lam) * self.classification_loss_fn(outputs, targets_b)
+        else:
+          outputs = self.forward(images)
+          loss = self.classification_loss_fn(outputs, labels_class)
 
-        classification_loss.backward()
+        loss.backward()
         self.optimizer.step()
 
-        train_loss += classification_loss.item()
-        train_progress_bar.set_postfix(batch_loss=classification_loss.item())
+        train_loss += loss.item()
+        train_progress_bar.set_postfix(batch_loss=loss.item())
 
       self.train_losses.append(train_loss / num_images)
       print(f"Epoch {epoch+1}/{self.epochs}, Training Loss: {train_loss / num_images:.4f}")

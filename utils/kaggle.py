@@ -14,6 +14,7 @@ class Kaggle(File):
       "/kaggle/input/entrep-train-dataset/train": "/kaggle/working/Dataset/train",
       "/kaggle/input/entrep-public-test/test": "/kaggle/working/Dataset/test",
       "/kaggle/input/entrep-public-dataset": "/kaggle/working/Dataset/public",
+      "/kaggle/input/entrep-synthetic-train-dataset/train_synthetic": "/kaggle/working/Dataset/train_synthetic",
       "/kaggle/input/entrep-model-weights/pytorch/default/1/model_weights": "/kaggle/working/model_weights"
     }
 
