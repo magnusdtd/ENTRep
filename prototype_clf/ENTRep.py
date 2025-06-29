@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from typing import List, Callable
 
 class ENTRep(torch.nn.Module):
-    def __init__(self, df: pd.Dataframe, transform:Callable=None):
+    def __init__(self, df: pd.DataFrame, transform:Callable=None):
         super().__init__()
         self.transform = transform
         self.df = df
