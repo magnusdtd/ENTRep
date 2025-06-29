@@ -1,23 +1,23 @@
 from FAISS.feature_extractor import FeatureExtractor
 import torch
 from PIL import Image
-import open_clip
 import numpy as np
 import os
+import timm
 
-class BioCLIP_FE(FeatureExtractor):
+class SAM_ViT_FE(FeatureExtractor):
   def __init__(
       self, 
-      model_name: str, 
-      model_path:str="", 
+      model_name: str = 'samvit_base_patch16.sa1b',
     ):
     super().__init__()
-    if model_path:
-      self.model, _, self.preprocess_val = open_clip.create_model_and_transforms(model_name, pretrained=model_path)
-    else:
-      self.model, _, self.preprocess_val = open_clip.create_model_and_transforms(model_name)
+  
+    self.model = timm.create_model(model_name, pretrained=True, num_classes=0)
     self.model.to(self.device)
     self.model.eval()
+    data_config = timm.data.resolve_model_data_config(self.model)
+    print("SAM data config:", data_config)
+    self.preprocess = timm.data.create_transform(**data_config, is_training=False)
 
   def extract_features(self, dataloader, is_inference: bool = False):
     all_features = []
@@ -35,9 +35,9 @@ class BioCLIP_FE(FeatureExtractor):
         for img_path in img_paths:
           img = Image.open(img_path)
 
-          image_tensor = self.preprocess_val(img).unsqueeze(0).to(self.device)
+          image_tensor = self.preprocess(img).to(self.device).unsqueeze(0).to(self.device)
 
-          image_feature = self.model.encode_image(image_tensor)
+          image_feature = self.model(image_tensor)
           image_feature /= image_feature.norm(dim=-1, keepdim=True)
 
           all_features.append(image_feature.cpu().numpy())
@@ -57,7 +57,7 @@ class BioCLIP_FE(FeatureExtractor):
     """
     with torch.no_grad():
       img = Image.open(img_path)
-      image_tensor = self.preprocess_val(img).unsqueeze(0).to(self.device)
-      image_feature = self.model.encode_image(image_tensor)
+      image_tensor = self.preprocess(img).to(self.device).unsqueeze(0).to(self.device)
+      image_feature = self.model(image_tensor)
       image_feature /= image_feature.norm(dim=-1, keepdim=True)
       return image_feature.cpu().numpy()

@@ -12,10 +12,10 @@ from FAISS.feature_extractor import FeatureExtractor
 def make_submission(feature_extractor: FeatureExtractor, model_name: str, test_file_path: str, output_folder_path: str = './results'):
     # Load test dataset
     test_df = pd.read_csv(test_file_path, header=None, names=['Path'])
+    test_df['Path'] = 'Dataset/test/imgs/' + test_df['Path'].astype(str)
     dataset = ENTRepDataset(
         test_df, {}, 
         get_transform(train=False),
-        images_dir='Dataset/test/imgs',
         is_inference=True
     )
     dataloader = DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4)
@@ -46,4 +46,4 @@ def make_submission(feature_extractor: FeatureExtractor, model_name: str, test_f
     with zipfile.ZipFile(zip_file_path, 'w') as zip_file:
         zip_file.write(json_file_path, arcname=json_file_name)
 
-    print(f"Submission saved to {zip_file_path}")
+    print(f'Submission saved to {zip_file_path}')
