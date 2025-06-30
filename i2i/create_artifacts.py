@@ -64,7 +64,7 @@ def create_artifacts(exp_name: str):
     val_dataset = ENTRepDataset(val_df, pair_mode=True)
     test_dataset = ENTRepDataset(test_df)
 
-    submission_df = pd.read_csv('Dataset/test/cls.csv', header=None, names=['Path'])
+    submission_df = pd.read_csv('Dataset/test/i2i.csv', header=None, names=['Path'])
     submission_df['Path'] = 'Dataset/test/imgs/' + submission_df['Path'].astype(str)
     submission_df = make_artifacts(submission_df, bioclip_args, dinov2_args, samvit_args)
     submission_dataset = ENTRepDataset(submission_df)
