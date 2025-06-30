@@ -108,7 +108,8 @@ def train(
     patience=5, 
     lr=1e-5, 
     device='cuda',
-    lambda_triplet=None
+    lambda_triplet=None,
+    lr_factor = 0.5
 ):
     early_stopper = EarlyStopping(patience=patience, mode='min', metric_name='Val Loss')
     
@@ -128,6 +129,8 @@ def train(
             lr=lr, 
             weight_decay=1e-4
         )
+
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=lr_factor, patience=2, verbose=True)
 
     infonce_loss_func = NTXentLoss(temperature=0.07).to(device)
 
@@ -197,6 +200,9 @@ def train(
             f"Total: {total_loss:.4f} | "
             f"Val Loss: {avg_val_loss:.4f}"
         )
+
+        scheduler.step(avg_val_loss)
+        print(f"Current learning rate: {optimizer.param_groups[0]['lr']}")
 
         # Early stopping
         early_stopper(model, avg_val_loss)
