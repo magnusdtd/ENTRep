@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from pytorch_metric_learning.losses import NTXentLoss
 from tqdm import tqdm
 from utils.early_stopping import EarlyStopping
-from prototype_clf.ENTRepDataset import ENTRepDataset
+from i2i.ENTRepDataset import ENTRepDataset
 
 class ProjectionModel(torch.nn.Module):
     def __init__(
@@ -109,11 +109,19 @@ def train(
         model.train()
         total_loss = 0.0
         train_iter = tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs} [Train]", leave=False)
-        for _, _, _, x in train_iter:
-            x = x.to(device)
-            embeddings = model(x)
-            infonce_loss = infonce_loss_func(embeddings, torch.arange(embeddings.size(0), device=device))
-            loss = infonce_loss
+        for _, _, query_emb, target_emb, _, _ in train_iter:
+            # Use embeddings for loss (could also use images if you want to learn from raw images)
+            query_emb = query_emb.to(device)
+            target_emb = target_emb.to(device)
+            # Project both query and target embeddings
+            query_proj = model(query_emb)
+            target_proj = model(target_emb)
+            # InfoNCE loss: treat each (query, target) as a positive pair, others in batch as negatives
+            # Stack as [2*B, D] and create labels
+            embeddings = torch.cat([query_proj, target_proj], dim=0)
+            labels = torch.arange(query_proj.size(0), device=device)
+            labels = torch.cat([labels, labels], dim=0)  # Each query and target are a positive pair
+            loss = infonce_loss_func(embeddings, labels)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -127,11 +135,15 @@ def train(
         val_loss = 0.0
         with torch.no_grad():
             val_iter = tqdm(val_loader, desc=f"Epoch {epoch + 1}/{num_epochs} [Val]", leave=False)
-            for _, _, _, x in val_iter:
-                x = x.to(device)
-                embeddings = model(x)
-                infonce_loss = infonce_loss_func(embeddings, torch.arange(embeddings.size(0), device=device))
-                val_loss += infonce_loss.item()
+            for query_img, target_img, query_emb, target_emb, query_path, target_path in val_iter:
+                query_emb = query_emb.to(device)
+                target_emb = target_emb.to(device)
+                query_proj = model(query_emb)
+                target_proj = model(target_emb)
+                embeddings = torch.cat([query_proj, target_proj], dim=0)
+                labels = torch.arange(query_proj.size(0), device=device)
+                labels = torch.cat([labels, labels], dim=0)
+                val_loss += infonce_loss_func(embeddings, labels).item()
         avg_val_loss = val_loss / len(val_loader)
         print(
             f"Epoch {epoch + 1:3d} | "
@@ -146,6 +158,7 @@ def train(
             break
         if early_stopper.best_model_state is not None:
             best_model_state = copy.deepcopy(early_stopper.best_model_state)
+            
     # Restore best model state
     if best_model_state is not None:
         model.load_state_dict(best_model_state)
