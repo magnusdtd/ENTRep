@@ -4,6 +4,21 @@ import numpy as np
 import pandas as pd
 from FAISS.combined_fe import CombinedFeatureExtractor
 from tqdm import tqdm
+import numbers
+
+def convert_numpy(obj):
+    if isinstance(obj, dict):
+        return {k: convert_numpy(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy(i) for i in obj]
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, numbers.Integral):
+        return int(obj)
+    elif isinstance(obj, numbers.Real):
+        return float(obj)
+    else:
+        return obj
 
 def save_artifacts(
         exp_name: str, 
@@ -12,8 +27,6 @@ def save_artifacts(
         test_dataset, 
         config
     ):
-    embed_dims = test_dataset.df.emb_dims.iloc[0]
-    np.save(f"results/numpy_embed_dims_{exp_name}.npy", embed_dims)
     train_dataset.df.to_csv(f"results/train_df_{exp_name}.csv", index=None)
     val_dataset.df.to_csv(f"results/val_df_{exp_name}.csv", index=None)
     test_dataset.df.to_csv(f"results/test_df_{exp_name}.csv", index=None)
@@ -26,24 +39,25 @@ def save_artifacts(
     np.save(f"results/train_numpy_embedding_{exp_name}.npy", train_embeddings)
     np.save(f"results/val_numpy_embedding_{exp_name}.npy", val_embeddings)
     np.save(f"results/test_numpy_embedding_{exp_name}.npy", test_embeddings)
-    
+
+
     with open(f"results/config_{exp_name}.json", "w") as f:
-        json.dump(config, f, sort_keys=True, indent=4)
+        json.dump(convert_numpy(config), f, sort_keys=True, indent=4)
 
 def load_artifacts(exp_name):
     train_df = pd.read_csv(f"results/train_df_{exp_name}.csv")
     val_df = pd.read_csv(f"results/val_df_{exp_name}.csv")
     test_df = pd.read_csv(f"results/test_df_{exp_name}.csv")
-    embed_dims = np.load(f"results/numpy_embed_dims_{exp_name}.npy", allow_pickle=True)
-    train_df['embed_dims'] = train_df.apply(lambda row: embed_dims, axis=1)
-    val_df['embed_dims'] = val_df.apply(lambda row: embed_dims, axis=1)
-    test_df['embed_dims'] = test_df.apply(lambda row: embed_dims, axis=1)
+
     train_embeddings = np.load(f"results/train_numpy_embedding_{exp_name}.npy", allow_pickle=True)
     val_embeddings = np.load(f"results/val_numpy_embedding_{exp_name}.npy", allow_pickle=True)
     test_embeddings = np.load(f"results/test_numpy_embedding_{exp_name}.npy", allow_pickle=True)
-    train_df["embedding"] = train_embeddings
-    val_df["embedding"] = val_embeddings
-    test_df["embedding"] = test_embeddings
+    
+    # Convert numpy arrays back to lists for proper dataframe storage
+    train_df["embedding"] = [emb.tolist() for emb in train_embeddings]
+    val_df["embedding"] = [emb.tolist() for emb in val_embeddings]
+    test_df["embedding"] = [emb.tolist() for emb in test_embeddings]
+    
     return train_df, val_df, test_df
 
 def make_artifacts(
@@ -65,7 +79,7 @@ def make_artifacts(
         img_path = row['Path']
         
         # Extract combined features
-        feature = combined_extractor.extract_feature(img_path)
+        feature = combined_extractor.extract_feature(img_path).squeeze(0)
         embeddings.append(feature)
             
     embeddings_array = np.array(embeddings)
