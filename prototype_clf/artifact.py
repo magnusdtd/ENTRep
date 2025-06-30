@@ -25,7 +25,8 @@ def save_artifacts(
         train_dataset, 
         val_dataset, 
         test_dataset, 
-        config
+        config,
+        submission_dataset = None
     ):
     train_dataset.df.to_csv(f"results/train_df_{exp_name}.csv", index=None)
     val_dataset.df.to_csv(f"results/val_df_{exp_name}.csv", index=None)
@@ -40,6 +41,11 @@ def save_artifacts(
     np.save(f"results/val_numpy_embedding_{exp_name}.npy", val_embeddings)
     np.save(f"results/test_numpy_embedding_{exp_name}.npy", test_embeddings)
 
+    # Save submission_dataset if provided
+    if submission_dataset is not None:
+        submission_dataset.df.to_csv(f"results/submission_df_{exp_name}.csv", index=None)
+        submission_embeddings = np.array(submission_dataset.df.embedding.tolist())
+        np.save(f"results/submission_numpy_embedding_{exp_name}.npy", submission_embeddings)
 
     with open(f"results/config_{exp_name}.json", "w") as f:
         json.dump(convert_numpy(config), f, sort_keys=True, indent=4)

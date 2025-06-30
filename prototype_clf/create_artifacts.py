@@ -68,11 +68,25 @@ def create_artifacts():
   val_dataset = ENTRepDataset(val_df)
   test_dataset = ENTRepDataset(test_df)
 
+  submission_df = pd.read_csv('Dataset/test/cls.csv', header=None, names=['Path'])
+  submission_df['Path'] = 'Dataset/test/imgs/' + submission_df['Path'].astype(str)
+  submission_df['Classification'] = None
+  submission_df = make_artifacts(submission_df, bioclip_args, dinov2_args, samvit_args)
+  submission_dataset = ENTRepDataset(submission_df)
+
   print("Saving artifacts...")
-  save_artifacts("proto_clf_DINOv2s_BioCLIP_SAMViTB", train_dataset, val_dataset, test_dataset, config)
+  exp_name = 'proto_clf_DINOv2s_BioCLIP_SAMViTB'
+  save_artifacts(
+    exp_name, 
+    train_dataset, 
+    val_dataset, 
+    test_dataset,
+    config,
+    submission_dataset
+  )
 
   print("Validating artifacts by loading...")
-  loaded_train_df, loaded_val_df, loaded_test_df = load_artifacts("proto_clf_DINOv2s_BioCLIP_SAMViTB")
+  loaded_train_df, loaded_val_df, loaded_test_df = load_artifacts(exp_name)
 
   # Verify the loaded data
   print(f"Original train shape: {train_df.shape}")
