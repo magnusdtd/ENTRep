@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from prototype_clf.artifact import make_artifacts, save_artifacts, load_artifacts
-from prototype_clf.ENTRep import ENTRep
+from prototype_clf.ENTRepDataset import ENTRepDataset
 from prototype_clf.test_entrep import test_entrep_dataset
 
 
@@ -64,9 +64,9 @@ def create_artifacts():
       'embedding_dim': feature_df['emb_dims'].iloc[0]
   }
 
-  train_dataset = ENTRep(train_df)
-  val_dataset = ENTRep(val_df)
-  test_dataset = ENTRep(test_df)
+  train_dataset = ENTRepDataset(train_df)
+  val_dataset = ENTRepDataset(val_df)
+  test_dataset = ENTRepDataset(test_df)
 
   print("Saving artifacts...")
   save_artifacts("proto_clf_DINOv2s_BioCLIP_SAMViTB", train_dataset, val_dataset, test_dataset, config)

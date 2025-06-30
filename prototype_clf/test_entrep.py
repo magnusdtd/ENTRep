@@ -1,6 +1,6 @@
 import numpy as np
 from prototype_clf.artifact import load_artifacts
-from prototype_clf.ENTRep import ENTRep
+from prototype_clf.ENTRepDataset import ENTRepDataset
 
 def test_entrep_dataset():
     print("Loading artifacts...")
@@ -35,9 +35,9 @@ def test_entrep_dataset():
     # Create ENTRep datasets
     print(f"\nCreating ENTRep datasets...")
     try:
-        train_dataset = ENTRep(train_df, split='train')
-        val_dataset = ENTRep(val_df, split='val')
-        test_dataset = ENTRep(test_df, split='test')
+        train_dataset = ENTRepDataset(train_df, split='train')
+        val_dataset = ENTRepDataset(val_df, split='val')
+        test_dataset = ENTRepDataset(test_df, split='test')
         print("✓ ENTRep datasets created successfully")
     except Exception as e:
         print(f"✗ Failed to create ENTRep datasets: {e}")

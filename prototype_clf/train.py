@@ -142,7 +142,7 @@ def train(
         triplet_loss_total = 0.0
 
         train_iter = tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs} [Train]", leave=False)
-        for x, y in train_iter:
+        for _, y, _, x in train_iter:
             x, y = x.to(device), y.to(device)
 
             embeddings = model(x)
