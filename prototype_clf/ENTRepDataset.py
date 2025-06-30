@@ -41,9 +41,12 @@ class ENTRepDataset(Dataset):
         else:
             label = None
 
-        image = Image.open(file_path) if file_path is not None else None
+        image = np.array(Image.open(file_path)) if file_path is not None else None
         if self.transform and image is not None:
-            image = self.transform(image)
+            transformed = self.transform(
+                image=image
+            )
+            image = transformed["image"]
 
         emb = None
         if "embedding" in self.df.columns:

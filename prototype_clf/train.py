@@ -177,7 +177,7 @@ def train(
 
         with torch.no_grad():
             val_iter = tqdm(val_loader, desc=f"Epoch {epoch + 1}/{num_epochs} [Val]", leave=False)
-            for x, y in val_iter:
+            for _, y, _, x in val_iter:
                 x, y = x.to(device), y.to(device)
                 embeddings = model(x)
                 logits = classifier(embeddings)

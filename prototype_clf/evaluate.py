@@ -1,7 +1,8 @@
 import torch
 import random
-from sklearn.metrics import precision_score, recall_score, f1_score, classification_report, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import precision_score, recall_score, f1_score, classification_report, confusion_matrix
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 def evaluate_model(model, classifier, dataloader, device, class_feature_map=None):
     model.eval()
@@ -24,7 +25,7 @@ def evaluate_model(model, classifier, dataloader, device, class_feature_map=None
             all_preds.extend(preds.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
     accuracy = correct / total if total > 0 else 0
-    print(f"\nValidation Accuracy: {accuracy:.4f} ({correct}/{total})")
+    print(f"\nValidation Accuracy: {accuracy:.4f}")
 
     # --- Calculate precision, recall, F1-score ---
     precision = precision_score(all_labels, all_preds, average='weighted', zero_division=0)
@@ -42,16 +43,23 @@ def evaluate_model(model, classifier, dataloader, device, class_feature_map=None
     print("\nClassification Report:")
     print(classification_report(all_labels, all_preds, target_names=target_names, zero_division=0))
 
-    # --- Confusion matrix ---
+    # --- Confusion matrix (seaborn) ---
     cm = confusion_matrix(all_labels, all_preds)
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=target_names)
-    disp.plot(cmap=plt.cm.Blues)
-    plt.title('Confusion Matrix')
+    if class_feature_map is not None:
+        class_names = [k for k, v in sorted(class_feature_map.items(), key=lambda x: x[1])]
+    else:
+        class_names = [str(i) for i in range(cm.shape[0])]
+
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=class_names, yticklabels=class_names)
+    plt.xlabel('Predicted Labels')
+    plt.ylabel('True Labels')
+    plt.title('Confusion Matrix (Seaborn)')
     plt.show()
 
-def random_inference(prototype_classifier, val_dataset, ):
-    sample_idx = random.randint(0, len(val_dataset) - 1)
-    sample_image, sample_label, sample_file_path, sample_embedding = val_dataset[sample_idx]
+def random_inference(prototype_classifier, test_dataset):
+    sample_idx = random.randint(0, len(test_dataset) - 1)
+    _, sample_label, sample_file_path, sample_embedding = test_dataset[sample_idx]
 
     print(f"Sample image path: {sample_file_path}")
     print(f"True label: {sample_label}")
@@ -70,7 +78,7 @@ def random_inference(prototype_classifier, val_dataset, ):
         for i in range(5):
             pred_class_id = top5_indices[0][i].item()
             pred_prob = top5_probs[0][i].item()
-            class_name = [k for k, v in val_dataset.class_feature_map.items() if v == pred_class_id][0]
+            class_name = [k for k, v in test_dataset.class_feature_map.items() if v == pred_class_id][0]
             print(f"  {i+1}. {class_name} (Class {pred_class_id}): {pred_prob:.4f}")
             
         # Check if true class is in top 5
