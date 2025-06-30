@@ -11,33 +11,29 @@ class PrototypeClassifier(torch.nn.Module):
         self.projection_model.eval()
 
         class_embeddings, _ = self._get_classifier_embeddings(train_dataset)
-        print("class embeddings shape before projection:", class_embeddings[0].shape)
         self.class_embeddings = [self.projection_model(class_embedding.to(device)) for class_embedding in class_embeddings]
-        print("class embeddings shape after projection:", self.class_embeddings[0].shape)
-        
         self.class_prototypes = torch.nn.Parameter(self.get_mean_prototypes(self.class_embeddings), requires_grad=False)
-        
-        print("prototypes shape:", self.class_prototypes.shape)
 
-    def _get_classifier_embeddings(self, dataset_train):
+
+    def _get_classifier_embeddings(self, train_dataset):
         class_embeddings = []
         empty_classes = []
-        n_classes = min(torch.inf, dataset_train.n_classes)
+        n_classes = min(torch.inf, train_dataset.n_classes)
         for cl in range(n_classes):
-            cls_embs = dataset_train.get_embeddings_for_class(cl)
+            cls_embs = train_dataset.get_embeddings_for_class(cl)
             if len(cls_embs) == 0:
                 empty_classes.append(cl)
-                class_embeddings.append(torch.zeros(1, dataset_train.emb_dim))
+                class_embeddings.append(torch.zeros(1, train_dataset.emb_dim, dtype=torch.float32))
             else:
-                class_embeddings.append(torch.tensor(np.vstack(cls_embs.values)))
+                class_embeddings.append(torch.tensor(np.vstack(cls_embs.values), dtype=torch.float32))
         return class_embeddings, empty_classes
 
     def get_mean_prototypes(self, embeddings):
-        return torch.stack([class_embs.mean(dim=0) for class_embs in embeddings])
+        return torch.stack([class_embs.mean(dim=0) for class_embs in embeddings]).float()
 
     @torch.no_grad()
     def make_prediction(self, embeddings):
-        embeddings = embeddings.to(self.device)
+        embeddings = embeddings.to(self.device).float()
         embeddings = self.projection_model(embeddings)
         print(embeddings.shape)
         print(self.class_prototypes.shape)

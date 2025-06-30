@@ -1,14 +1,12 @@
 import torch
+from torch.utils.data import Dataset
 from PIL import Image
-import pandas as pd
-from typing import Callable
 import numpy as np
 
-class ENTRep(torch.nn.Module):
-    def __init__(self, df: pd.DataFrame, transform:Callable=None, split:str='train'):
-        super().__init__()
+class ENTRepDataset(Dataset):
+    def __init__(self, dataframe, transform=None, split='train'):
+        self.df = dataframe
         self.transform = transform
-        self.df = df
         self.split = split
         self.class_feature_map = {
             "nose-right": 0, 
@@ -19,12 +17,9 @@ class ENTRep(torch.nn.Module):
             "vc-closed" : 5, 
             "throat"    : 6, 
         }
-        
         self.n_classes = len(self.class_feature_map)
         if "embedding" in self.df.columns and len(self.df) > 0:
             t = self.df['embedding'].iloc[0]
-
-            # Handle different types of embeddings
             if isinstance(t, np.ndarray):
                 self.emb_dim = t.shape[0] if t.ndim > 0 else 1
             elif isinstance(t, list):
@@ -35,41 +30,28 @@ class ENTRep(torch.nn.Module):
         else:
             self.emb_dim = None
 
-        print(f'self.emb_dim = {self.emb_dim}')
-
     def __len__(self):
         return len(self.df)
 
-    def get_embeddings_for_class(self, id):
-        
-        class_idxs = self.df[self.df['Classification'] == id].index
-        return self.df.iloc[class_idxs]['embedding']
-
-    def __getitem__(self, idx: int):
-
-        file_path = self.df["Path"].iloc[idx]
-        if self.split != 'test':
+    def __getitem__(self, idx):
+        file_path = self.df["Path"].iloc[idx] if "Path" in self.df.columns else None
+        if self.split != 'test' and "Classification" in self.df.columns:
             label = self.df["Classification"].iloc[idx]
             label = torch.tensor(label, dtype=torch.long)
         else:
             label = None
 
-        image = Image.open(file_path)
-    
-        if self.transform:
+        image = Image.open(file_path) if file_path is not None else None
+        if self.transform and image is not None:
             image = self.transform(image)
-    
+
+        emb = None
         if "embedding" in self.df.columns:
             emb = self.df.iloc[idx]['embedding']
-            print(f'emb type = {type(emb)}, shape = {emb.shape if hasattr(emb, "shape") else "no shape"}')
-            
-            emb = torch.tensor(emb, dtype=torch.float32)
-            
-            print(f'emb type = {type(emb)}, shape = {emb.shape}')
-            emb = emb.squeeze()
-            print(f'emb after squeeze type = {type(emb)}, shape = {emb.shape}')
+            emb = torch.tensor(emb, dtype=torch.float32).squeeze()
 
-        else:
-            emb = None
-    
         return image, label, file_path, emb
+
+    def get_embeddings_for_class(self, class_id):
+        class_idxs = self.df[self.df['Classification'] == class_id].index
+        return self.df.iloc[class_idxs]['embedding'] 

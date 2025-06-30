@@ -9,24 +9,12 @@ import torch.nn.functional as F
 from pytorch_metric_learning.losses import NTXentLoss
 from utils.learnable_loss import LearnableLossWeighting
 from tqdm import tqdm
+from utils.early_stopping import EarlyStopping
+from prototype_clf.ENTRepDataset import ENTRepDataset
 
-class EmbeddingDataset(Dataset):
-    def __init__(self, dataframe):
-        self.df = dataframe
-        self.embeddings = dataframe['embedding'].values
-        self.labels = dataframe['Classification'].values
-
-    def __len__(self):
-        return len(self.df)
-
-    def __getitem__(self, idx):
-        emb = torch.tensor(self.embeddings[idx], dtype=torch.float32).squeeze()
-        label = torch.tensor(self.labels[idx], dtype=torch.long)
-        return emb, label
-    
 class ProjectionModel(torch.nn.Module):
     def __init__(
-            self, 
+            self,
             input_dim, 
             embedder_dims, 
             projection_dim=512, 
@@ -45,7 +33,7 @@ class ProjectionModel(torch.nn.Module):
         self.fixed_dim = attention_dim
 
         if use_attention:
-            self.attn_weights = torch.nn.Parameter(torch.ones(self.num_embedders))
+            self.attn_weights = torch.nn.Parameter(torch.ones(self.num_embedders, dtype=torch.float32))
 
             self.attn_projections = torch.nn.ModuleList([
                 torch.nn.Sequential(
@@ -101,7 +89,7 @@ class CosineClassifier(torch.nn.Module):
     """Classifier to train the ProjectionModel"""
     def __init__(self, embed_dim, num_classes, scale=10.0):
         super().__init__()
-        self.weight = torch.nn.Parameter(torch.randn(num_classes, embed_dim))
+        self.weight = torch.nn.Parameter(torch.randn(num_classes, embed_dim, dtype=torch.float32))
         self.scale = scale  # Optional learnable scaling
         torch.nn.init.kaiming_uniform_(self.weight, a=math.sqrt(5))
 
@@ -112,38 +100,18 @@ class CosineClassifier(torch.nn.Module):
         return self.scale * torch.matmul(x, w.T)
 
 def train(
-      model: ProjectionModel, 
-      classifier: CosineClassifier, 
-      train_loader: DataLoader, 
-      val_loader: DataLoader, 
-      num_epochs=300, 
-      patience=5, 
-      lr=1e-5, 
-      device='cuda'
-    ):
-    return _train_ce_infonce(
-        model, 
-        classifier, 
-        train_loader, 
-        val_loader, 
-        num_epochs, 
-        patience, 
-        lr, 
-        device
-    )
-
-def _train_ce_infonce(
-    model,
-    classifier,
-    train_loader,
-    val_loader,
-    num_epochs,
-    patience,
-    lr,
-    device,
+    model: ProjectionModel, 
+    classifier: CosineClassifier, 
+    train_loader: DataLoader, 
+    val_loader: DataLoader, 
+    num_epochs=300, 
+    patience=5, 
+    lr=1e-5, 
+    device='cuda',
     lambda_triplet=None
 ):
-
+    early_stopper = EarlyStopping(patience=patience, mode='min', metric_name='Val Loss')
+    
     model.to(device)
     classifier.to(device)
     if lambda_triplet == "learned" or lambda_triplet is None:
@@ -163,10 +131,8 @@ def _train_ce_infonce(
 
     infonce_loss_func = NTXentLoss(temperature=0.07).to(device)
 
-    best_val_loss = float('inf')
     best_model_state = None
     best_classifier_state = None
-    patience_counter = 0
 
     for epoch in range(num_epochs):
         model.train()
@@ -198,7 +164,6 @@ def _train_ce_infonce(
             ce_loss_total += ce_loss.item()
             triplet_loss_total += infonce_loss.item()
 
-            # Optionally, update tqdm bar with current loss
             train_iter.set_postfix({
                 "CE": f"{ce_loss_total:.3f}",
                 "InfoNCE": f"{triplet_loss_total:.3f}",
@@ -211,13 +176,12 @@ def _train_ce_infonce(
         val_loss = 0.0
 
         with torch.no_grad():
-            val_iter = tqdm(val_loader, desc=f"Epoch {epoch+1}/{num_epochs} [Val]", leave=False)
+            val_iter = tqdm(val_loader, desc=f"Epoch {epoch + 1}/{num_epochs} [Val]", leave=False)
             for x, y in val_iter:
                 x, y = x.to(device), y.to(device)
                 embeddings = model(x)
                 logits = classifier(embeddings)
                 ce_loss = F.cross_entropy(logits, y)
-
                 infonce_loss = infonce_loss_func(embeddings, y)
 
                 if lambda_triplet == "learned" or lambda_triplet is None:
@@ -227,25 +191,25 @@ def _train_ce_infonce(
 
         avg_val_loss = val_loss / len(val_loader)
         print(
-            f"Epoch {epoch+1:3d} | "
+            f"Epoch {epoch + 1:3d} | "
             f"Train CE: {ce_loss_total:.4f} | "
             f"InfoNCE: {triplet_loss_total:.4f} | "
             f"Total: {total_loss:.4f} | "
             f"Val Loss: {avg_val_loss:.4f}"
         )
 
-        if avg_val_loss < best_val_loss:
-            best_val_loss = avg_val_loss
-            best_model_state = copy.deepcopy(model.state_dict())
+        # Early stopping
+        early_stopper(model, avg_val_loss)
+        if early_stopper.early_stop:
+            break
+        if early_stopper.best_model_state is not None:
+            best_model_state = copy.deepcopy(early_stopper.best_model_state)
             best_classifier_state = copy.deepcopy(classifier.state_dict())
-            patience_counter = 0
-        else:
-            patience_counter += 1
-            if patience_counter >= patience:
-                print("Early stopping.")
-                break
 
-    model.load_state_dict(best_model_state)
-    classifier.load_state_dict(best_classifier_state)
+    # Restore best model state
+    if best_model_state is not None:
+        model.load_state_dict(best_model_state)
+    if best_classifier_state is not None:
+        classifier.load_state_dict(best_classifier_state)
     return model, classifier
     
