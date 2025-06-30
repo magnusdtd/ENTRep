@@ -12,8 +12,8 @@ def make_submission(
         output_folder_path: str = './results'
     ):
     # Load test file
-    test_df = pd.read_csv(f"results/test_df_{exp_name}.csv")
-    test_embeddings = np.load(f"results/test_numpy_embedding_{exp_name}.npy", allow_pickle=True)
+    test_df = pd.read_csv(f"results/submission_df_{exp_name}.csv")
+    test_embeddings = np.load(f"results/submission_numpy_embedding_{exp_name}.npy", allow_pickle=True)
     test_df["embedding"] = [emb.tolist() for emb in test_embeddings]
 
     # Create predictions dictionary
