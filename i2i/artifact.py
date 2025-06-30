@@ -32,13 +32,27 @@ def save_artifacts(
     val_dataset.df.to_csv(f"results/val_df_{exp_name}.csv", index=None)
     test_dataset.df.to_csv(f"results/test_df_{exp_name}.csv", index=None)
     
-    # Convert embedding lists to numpy arrays before saving
-    train_embeddings = np.array(train_dataset.df.embedding.tolist())
-    val_embeddings = np.array(val_dataset.df.embedding.tolist())
+    # Handle train/val datasets with query_embedding/target_embedding
+    if 'query_embedding' in train_dataset.df.columns and 'target_embedding' in train_dataset.df.columns:
+        train_query_embeddings = np.array(train_dataset.df['query_embedding'].tolist())
+        train_target_embeddings = np.array(train_dataset.df['target_embedding'].tolist())
+        np.save(f"results/train_query_embedding_{exp_name}.npy", train_query_embeddings)
+        np.save(f"results/train_target_embedding_{exp_name}.npy", train_target_embeddings)
+    else:
+        train_embeddings = np.array(train_dataset.df.embedding.tolist())
+        np.save(f"results/train_numpy_embedding_{exp_name}.npy", train_embeddings)
+
+    if 'query_embedding' in val_dataset.df.columns and 'target_embedding' in val_dataset.df.columns:
+        val_query_embeddings = np.array(val_dataset.df['query_embedding'].tolist())
+        val_target_embeddings = np.array(val_dataset.df['target_embedding'].tolist())
+        np.save(f"results/val_query_embedding_{exp_name}.npy", val_query_embeddings)
+        np.save(f"results/val_target_embedding_{exp_name}.npy", val_target_embeddings)
+    else:
+        val_embeddings = np.array(val_dataset.df.embedding.tolist())
+        np.save(f"results/val_numpy_embedding_{exp_name}.npy", val_embeddings)
+
+    # Test dataset (single embedding column)
     test_embeddings = np.array(test_dataset.df.embedding.tolist())
-    
-    np.save(f"results/train_numpy_embedding_{exp_name}.npy", train_embeddings)
-    np.save(f"results/val_numpy_embedding_{exp_name}.npy", val_embeddings)
     np.save(f"results/test_numpy_embedding_{exp_name}.npy", test_embeddings)
 
     # Save submission_dataset if provided
@@ -55,13 +69,26 @@ def load_artifacts(exp_name):
     val_df = pd.read_csv(f"results/val_df_{exp_name}.csv")
     test_df = pd.read_csv(f"results/test_df_{exp_name}.csv")
 
-    train_embeddings = np.load(f"results/train_numpy_embedding_{exp_name}.npy", allow_pickle=True)
-    val_embeddings = np.load(f"results/val_numpy_embedding_{exp_name}.npy", allow_pickle=True)
+    # Try to load query/target embeddings for train/val, fallback to embedding
+    try:
+        train_query_embeddings = np.load(f"results/train_query_embedding_{exp_name}.npy", allow_pickle=True)
+        train_target_embeddings = np.load(f"results/train_target_embedding_{exp_name}.npy", allow_pickle=True)
+        train_df["query_embedding"] = [emb.tolist() for emb in train_query_embeddings]
+        train_df["target_embedding"] = [emb.tolist() for emb in train_target_embeddings]
+    except FileNotFoundError:
+        train_embeddings = np.load(f"results/train_numpy_embedding_{exp_name}.npy", allow_pickle=True)
+        train_df["embedding"] = [emb.tolist() for emb in train_embeddings]
+
+    try:
+        val_query_embeddings = np.load(f"results/val_query_embedding_{exp_name}.npy", allow_pickle=True)
+        val_target_embeddings = np.load(f"results/val_target_embedding_{exp_name}.npy", allow_pickle=True)
+        val_df["query_embedding"] = [emb.tolist() for emb in val_query_embeddings]
+        val_df["target_embedding"] = [emb.tolist() for emb in val_target_embeddings]
+    except FileNotFoundError:
+        val_embeddings = np.load(f"results/val_numpy_embedding_{exp_name}.npy", allow_pickle=True)
+        val_df["embedding"] = [emb.tolist() for emb in val_embeddings]
+
     test_embeddings = np.load(f"results/test_numpy_embedding_{exp_name}.npy", allow_pickle=True)
-    
-    # Convert numpy arrays back to lists for proper dataframe storage
-    train_df["embedding"] = [emb.tolist() for emb in train_embeddings]
-    val_df["embedding"] = [emb.tolist() for emb in val_embeddings]
     test_df["embedding"] = [emb.tolist() for emb in test_embeddings]
     
     return train_df, val_df, test_df
