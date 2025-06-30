@@ -6,7 +6,7 @@ from prototype_clf.ENTRepDataset import ENTRepDataset
 from prototype_clf.test_entrep import test_entrep_dataset
 
 
-def create_artifacts():
+def create_artifacts(exp_name:str):
   df = pd.read_json('Dataset/train/cls.json', orient='index')
   df = df.reset_index()
   df.columns = ['Path', 'Classification']
@@ -75,7 +75,7 @@ def create_artifacts():
   submission_dataset = ENTRepDataset(submission_df)
 
   print("Saving artifacts...")
-  exp_name = 'proto_clf_DINOv2s_BioCLIP_SAMViTB'
+  
   save_artifacts(
     exp_name, 
     train_dataset, 
