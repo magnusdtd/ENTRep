@@ -5,6 +5,13 @@ import pandas as pd
 from FAISS.combined_fe import CombinedFeatureExtractor
 from tqdm import tqdm
 import numbers
+import ast
+
+def list_converter(x):
+    try:
+        return ast.literal_eval(x)
+    except Exception:
+        return x
 
 def convert_numpy(obj):
     if isinstance(obj, dict):
@@ -65,9 +72,36 @@ def save_artifacts(
         json.dump(convert_numpy(config), f, sort_keys=True, indent=4)
 
 def load_artifacts(exp_name):
-    train_df = pd.read_csv(f"results/train_df_{exp_name}.csv")
-    val_df = pd.read_csv(f"results/val_df_{exp_name}.csv")
-    test_df = pd.read_csv(f"results/test_df_{exp_name}.csv")
+
+
+    # Try to use converters for possible columns
+    train_df = pd.read_csv(
+        f"results/train_df_{exp_name}.csv",
+        converters={
+            'query_embedding': list_converter,
+            'target_embedding': list_converter,
+            'embedding': list_converter,
+            'query_path': str,
+            'target_path': str
+        }
+    )
+    val_df = pd.read_csv(
+        f"results/val_df_{exp_name}.csv",
+        converters={
+            'query_embedding': list_converter,
+            'target_embedding': list_converter,
+            'embedding': list_converter,
+            'query_path': str,
+            'target_path': str
+        }
+    )
+    test_df = pd.read_csv(
+        f"results/test_df_{exp_name}.csv",
+        converters={
+            'embedding': list_converter,
+            'Path': str
+        }
+    )
 
     # Try to load query/target embeddings for train/val, fallback to embedding
     try:
