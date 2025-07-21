@@ -30,34 +30,36 @@ def classify_image(model, image_tensor, device):
 
 def random_inference_9_images(
     model, 
-    df:pd.DataFrame, 
-    class_feature_map:dict, 
+    df: pd.DataFrame, 
+    label_encoder: dict, 
     device: str,
-    image_folder: str = "Dataset/train/imgs"
 ):
-    """Randomly select 9 images from the folder"""
+    """Randomly select 9 images from the DataFrame and display predictions."""
 
-    inv_class_feature_map = {v: k for k, v in class_feature_map.items()}
-    image_files = os.listdir(image_folder)
-    selected_images = random.sample(image_files, 9)
+    inv_label_encoder = {v: k for k, v in label_encoder.items()}
+
+    # Randomly sample 9 rows from the DataFrame
+    if len(df) < 9:
+        raise ValueError("DataFrame has fewer than 9 images.")
+    sampled_df = df.sample(n=9, random_state=None).reset_index(drop=True)
 
     fig, axes = plt.subplots(3, 3, figsize=(12, 12))
     for i, ax in enumerate(axes.flat):
-        image_path = os.path.join(image_folder, selected_images[i])
-        image = Image.open(image_path).convert("RGB")
-        image_name = os.path.basename(image_path)
-        true_class = df[df['Path'] == image_name]['Classification']
-        if true_class.empty:
-            print(f"Warning: No matching entry found for {image_name} in DataFrame.")
+        image_path = sampled_df.loc[i, 'Path']
+        true_label = sampled_df.loc[i, 'Label']
+        if not os.path.exists(image_path):
+            print(f"Warning: Image file {image_path} does not exist.")
+            ax.axis('off')
+            ax.set_title(f"Missing: {image_path}")
             continue
-        true_class = true_class.values[0]
+        image = Image.open(image_path).convert("RGB")
         image_tensor = preprocess_image(image_path)
         class_ = classify_image(model, image_tensor, device)
 
         ax.imshow(image)
         ax.axis('off')
         ax.set_title(
-            f"True: {true_class}\nPred: {inv_class_feature_map[class_]}",
+            f"True: {true_label}\nPred: {inv_label_encoder[class_]}",
         )
         fig.suptitle("True Labels and Predictions for Random Images", fontsize=18, y=1.03)
     plt.tight_layout(rect=[0, 0, 1, 0.97])

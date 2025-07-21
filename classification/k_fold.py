@@ -13,11 +13,10 @@ class K_Fold:
       k:int, 
       df: pd.DataFrame, 
       model, 
-      class_feature_map:dict,
+      label_encoder:dict,
       epochs: int,
       unfreeze_layers:list[str],
       batch_size:int = 4,
-      img_path = 'Dataset/train/imgs',
       random_seed: int = 42
     ):
     self.k = k
@@ -27,14 +26,13 @@ class K_Fold:
     self.best_model_state_dict = None
     self.best_accuracy = 0
     self.model = model
-    self.class_feature_map = class_feature_map
+    self.label_encoder = label_encoder
     self.epochs = epochs
     self.unfreeze_layers = unfreeze_layers
     self.batch_size = batch_size
     self.train_losses = []
     self.val_losses = []
     self.accuracies = []
-    self.img_path = img_path
     self.random_seed = random_seed
 
   def run(self):
@@ -54,14 +52,13 @@ class K_Fold:
 
       train_dataset = ENTRepDataset(
          train_df, 
-         self.class_feature_map, 
-         img_path=self.img_path, 
-         transform=get_transform(train=True)
+         self.label_encoder,
+         transform=get_transform(train=True),
+         is_train = True
       )
       val_dataset = ENTRepDataset(
          val_df, 
-         self.class_feature_map, 
-         img_path=self.img_path, 
+         self.label_encoder,
          transform=get_transform(train=False)
       )
 

@@ -5,16 +5,13 @@ import pandas as pd
 import datetime
 from classification.inference import preprocess_image, classify_image
 
-def make_submission(model, model_name:str, device:str, test_file_path: str, output_folder_path: str = './results'):
-    # Load test file paths
-    test_df = pd.read_csv(test_file_path, header=None, names=['image_path'])
-
+def make_submission(model, model_name:str, device:str, df: pd.DataFrame, output_folder_path: str = './results'):
     # Create predictions dictionary
     predictions = {}
-    for img_name in test_df['image_path']:
-        image_path = os.path.join('Dataset/test/imgs', img_name)
-        image_tensor = preprocess_image(image_path)
-        predicted_label = classify_image(model, image_tensor, device)
+    for img_path in df['Path']:
+        img_tensor = preprocess_image(img_path)
+        predicted_label = classify_image(model, img_tensor, device)
+        img_name = os.path.basename(img_path)
         predictions[img_name] = predicted_label
 
     # Generate unique JSON filename with model_name as prefix
