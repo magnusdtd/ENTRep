@@ -67,6 +67,9 @@ class Classification:
     elif scheduler == torch.optim.lr_scheduler.CosineAnnealingLR:
         scheduler_kwargs.update({'T_max': kwargs.get('T_max', 50)})
         scheduler_kwargs.update({'eta_min': kwargs.get('eta_min', 1e-6)})
+    elif scheduler == torch.optim.lr_scheduler.StepLR:
+        scheduler_kwargs.update({'step_size': kwargs.get('step_size', 10)})
+        scheduler_kwargs.update({'gamma': kwargs.get('gamma', 0.1)})
     scheduler_kwargs.update(kwargs.get('scheduler_kwargs', {}))
 
     self.scheduler = scheduler(self.optimizer, **scheduler_kwargs)
