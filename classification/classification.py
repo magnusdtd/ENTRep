@@ -108,11 +108,12 @@ class Classification:
 
   def _apply_augmentation(self, images, labels_class):
       enabled_augs = []
+      batch_size = images.size(0)
       if self.use_mixup:
           enabled_augs.append('mixup')
       if self.use_cutmix:
           enabled_augs.append('cutmix')
-      if self.use_mosaic:
+      if self.use_mosaic and batch_size >= 4:
           enabled_augs.append('mosaic')
       if not enabled_augs:
           return images, labels_class, labels_class, 1.0
