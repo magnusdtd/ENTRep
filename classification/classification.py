@@ -14,17 +14,18 @@ import numpy as np
 class Classification:
   def __init__(
       self,
-      num_classes: int = 7,
       earlyStopping_patience: int = 7,
+      criterion=None,
+      optimizer=torch.optim.Adam,
+      scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau,
       use_mixup = False,
       mixup_alpha = 0.4,
       use_cutmix = False,
       cutmix_alpha = 1.0,
       use_mosaic = False,
-      mosaic_alpha = 1.0,
-      adv_aug_prob = 0.5
+      adv_aug_prob = 0.5,
+      **kwargs
 ):
-    self.num_classes = num_classes
 
     self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -36,18 +37,41 @@ class Classification:
 
     self.earlyStopping = EarlyStopping(patience=earlyStopping_patience)
 
-    self.model = None
-    self.classification_loss_fn = None
-    self.optimizer = None
-    self.scheduler = None
-
     self.use_mixup = use_mixup 
     self.mixup_alpha = mixup_alpha
     self.use_cutmix = use_cutmix 
     self.cutmix_alpha = cutmix_alpha
     self.use_mosaic = use_mosaic
-    self.mosaic_alpha = mosaic_alpha
     self.adv_aug_prob = adv_aug_prob
+
+    # Loss function
+    if criterion is None:
+        class_weights = kwargs.get('class_weights', None)
+        if class_weights is not None:
+            class_weights = torch.tensor(class_weights, device=self.device).float()
+        self.classification_loss_fn = nn.CrossEntropyLoss(weight=class_weights).to(self.device).float()
+    else:
+        self.classification_loss_fn = criterion.to(self.device).float()
+
+    # Optimizer
+    optimizer_kwargs = {'lr': 1e-3, 'weight_decay': 1e-4}
+    if optimizer == torch.optim.SGD:
+        optimizer_kwargs.update({'momentum': 0.9})
+    optimizer_kwargs.update(kwargs.get('optimizer_kwargs', {}))
+    self.optimizer = optimizer(self.model.parameters(), **optimizer_kwargs)
+
+    # Scheduler
+    scheduler_kwargs = {}
+    if scheduler == torch.optim.lr_scheduler.ReduceLROnPlateau:
+        scheduler_kwargs.update({'mode': 'min', 'patience': 3})
+    elif scheduler == torch.optim.lr_scheduler.CosineAnnealingLR:
+        scheduler_kwargs.update({'T_max': kwargs.get('T_max', 50)})
+        scheduler_kwargs.update({'eta_min': kwargs.get('eta_min', 1e-6)})
+    scheduler_kwargs.update(kwargs.get('scheduler_kwargs', {}))
+
+    self.scheduler = scheduler(self.optimizer, **scheduler_kwargs)
+
+    self.model.to(self.device).float()
 
   def forward(self, images: torch.Tensor):
     images = images.to(self.device)
@@ -98,7 +122,7 @@ class Classification:
       elif aug == 'cutmix':
           return cutmix_data(images, labels_class, alpha=self.cutmix_alpha)
       elif aug == 'mosaic':
-          mosaic_imgs, mosaic_labels, lam_list = mosaic_data(images, labels_class, alpha=self.mosaic_alpha)
+          mosaic_imgs, mosaic_labels, lam_list = mosaic_data(images, labels_class)
           return mosaic_imgs, mosaic_labels, lam_list, 'mosaic'
       else:
           return images, labels_class, labels_class, 1.0
@@ -222,3 +246,6 @@ class Classification:
   def load_model(model_path:str, backbone):
     """Load the trained model state dictionary into the model architecture."""
     pass
+
+  def load_state_dict(self, model_state_dict):
+    self.model.load_state_dict(model_state_dict)

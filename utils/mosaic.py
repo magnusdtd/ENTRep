@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 
-def mosaic_data(x, y, alpha=1.0):
+def mosaic_data(x, y):
     '''Mix data and labels using Mosaic'''
     batch_size, c, h, w = x.size()
     mosaic_imgs = torch.zeros_like(x)

@@ -54,7 +54,4 @@ class ENTRepDataset(Dataset):
                 temp = "ear-right"
             label['class'] = torch.tensor(self.label_encoder[temp], dtype=torch.long)
 
-        temp_img_path = f"./cache/{uuid.uuid4()}.jpg"
-        cv2.imwrite(temp_img_path, np.asarray(img_tensor.permute(1, 2, 0) * 255).astype(np.uint8))
-
         return img_tensor, label
