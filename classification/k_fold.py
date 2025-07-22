@@ -39,7 +39,7 @@ class K_Fold:
     """Run k-fold cross validation training"""
     print(f"Starting {self.k}-fold cross validation training...")
     
-    for fold, (train_idx, val_idx) in enumerate(self.skf.split(self.df, self.df['Classification'])):
+    for fold, (train_idx, val_idx) in enumerate(self.skf.split(self.df, self.df['Label'])):
       print(f"\n{'='*50}")
       print(f"Fold {fold + 1}/{self.k}")
       print(f"{'='*50}")

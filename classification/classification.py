@@ -5,7 +5,9 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 from utils.early_stopping import EarlyStopping
 from utils.unfreeze_layer import unfreeze_model_layers
-from utils.mixup import mixup_data, cutmix_data
+from utils.mixup import mixup_data
+from utils.cutmix import cutmix_data
+from utils.mosaic import mosaic_data
 import numpy as np
 
 
@@ -18,6 +20,8 @@ class Classification:
       mixup_alpha = 0.4,
       use_cutmix = False,
       cutmix_alpha = 1.0,
+      use_mosaic = False,
+      mosaic_alpha = 1.0,
       adv_aug_prob = 0.5
 ):
     self.num_classes = num_classes
@@ -41,6 +45,8 @@ class Classification:
     self.mixup_alpha = mixup_alpha
     self.use_cutmix = use_cutmix 
     self.cutmix_alpha = cutmix_alpha
+    self.use_mosaic = use_mosaic
+    self.mosaic_alpha = mosaic_alpha
     self.adv_aug_prob = adv_aug_prob
 
   def forward(self, images: torch.Tensor):
@@ -77,17 +83,25 @@ class Classification:
     plt.show()
 
   def _apply_augmentation(self, images, labels_class):
-    if  self.use_mixup and self.use_cutmix:
-      if np.random.rand() < 0.5:
-        return mixup_data(images, labels_class, alpha=self.mixup_alpha)
+      enabled_augs = []
+      if self.use_mixup:
+          enabled_augs.append('mixup')
+      if self.use_cutmix:
+          enabled_augs.append('cutmix')
+      if self.use_mosaic:
+          enabled_augs.append('mosaic')
+      if not enabled_augs:
+          return images, labels_class, labels_class, 1.0
+      aug = np.random.choice(enabled_augs)
+      if aug == 'mixup':
+          return mixup_data(images, labels_class, alpha=self.mixup_alpha)
+      elif aug == 'cutmix':
+          return cutmix_data(images, labels_class, alpha=self.cutmix_alpha)
+      elif aug == 'mosaic':
+          mosaic_imgs, mosaic_labels, lam_list = mosaic_data(images, labels_class, alpha=self.mosaic_alpha)
+          return mosaic_imgs, mosaic_labels, lam_list, 'mosaic'
       else:
-        return cutmix_data(images, labels_class, alpha=self.cutmix_alpha)
-    elif self.use_mixup:
-      return mixup_data(images, labels_class, alpha=self.mixup_alpha)
-    elif self.use_cutmix:
-      return cutmix_data(images, labels_class, alpha=self.cutmix_alpha)
-    else:
-      return images, labels_class, labels_class, 1.0
+          return images, labels_class, labels_class, 1.0
 
   def fine_tune(
       self, 
@@ -124,13 +138,23 @@ class Classification:
         self.optimizer.zero_grad()
 
         # Augmentation
-        if np.random.random() < self.adv_aug_prob and (self.use_mixup or self.use_cutmix):
-          mixed_images, targets_a, targets_b, lam = self._apply_augmentation(images, labels_class)
-          outputs = self.forward(mixed_images)
-          loss = lam * self.classification_loss_fn(outputs, targets_a) + (1 - lam) * self.classification_loss_fn(outputs, targets_b)
+        if np.random.random() < self.adv_aug_prob and (self.use_mixup or self.use_cutmix or self.use_mosaic):
+            aug_result = self._apply_augmentation(images, labels_class)
+            if len(aug_result) == 4 and aug_result[-1] == 'mosaic':
+                mixed_images, mosaic_labels, lam_list, _ = aug_result
+                outputs = self.forward(mixed_images)
+                # For each image, compute the weighted sum of losses for the 4 labels
+                loss = 0
+                for k in range(4):
+                    loss += lam_list[:, k] * self.classification_loss_fn(outputs, mosaic_labels[:, k])
+                loss = loss.sum() / images.size(0)
+            else:
+                mixed_images, targets_a, targets_b, lam = aug_result
+                outputs = self.forward(mixed_images)
+                loss = lam * self.classification_loss_fn(outputs, targets_a) + (1 - lam) * self.classification_loss_fn(outputs, targets_b)
         else:
-          outputs = self.forward(images)
-          loss = self.classification_loss_fn(outputs, labels_class)
+            outputs = self.forward(images)
+            loss = self.classification_loss_fn(outputs, labels_class)
 
         loss.backward()
         self.optimizer.step()
