@@ -1,35 +1,52 @@
 import torch
 from torch import nn
 from classification.classification import Classification
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 class DenseNet(Classification):
-  def __init__(
-    self,
-    backbone,
-    lr: float = 1e-3,
-    num_classes: int = 7,
-    earlyStopping_patience: int = 7
-  ):
-    super().__init__(num_classes, earlyStopping_patience)
+    def __init__(
+        self,
+        backbone,
+        hidden_channel: int = 256,
+        dropout_ratio: float = 0.4,
+        num_classes: int = 7,
+        earlyStopping_patience: int = 7,
+        criterion=None,
+        optimizer=torch.optim.Adam,
+        scheduler=torch.optim.lr_scheduler.ReduceLROnPlateau,
+        use_mixup: bool = False,
+        mixup_alpha: float = 0.4,
+        use_cutmix: bool = False,
+        cutmix_alpha: float = 1.0,
+        use_mosaic: bool = False,
+        mosaic_alpha: float = 1.0,
+        adv_aug_prob: float = 0.5,
+        **kwargs
+    ):
+        self.model = backbone
+        self.model.classifier = nn.Sequential(
+            nn.Linear(self.model.classifier.in_features, hidden_channel),
+            nn.ReLU(),
+            nn.Dropout(dropout_ratio),
+            nn.Linear(hidden_channel, num_classes)
+        )
 
-    self.model = backbone.to(self.device)
-    self.model.classifier = nn.Sequential(
-      nn.Linear(self.model.classifier.in_features, 256),
-      nn.ReLU(),
-      nn.Dropout(0.4),
-      nn.Linear(256, self.num_classes)
-    ).to(self.device)
+        super().__init__(
+            earlyStopping_patience=earlyStopping_patience,
+            criterion=criterion,
+            optimizer=optimizer,
+            scheduler=scheduler,
+            use_mixup=use_mixup,
+            mixup_alpha=mixup_alpha,
+            use_cutmix=use_cutmix,
+            cutmix_alpha=cutmix_alpha,
+            use_mosaic=use_mosaic,
+            adv_aug_prob=adv_aug_prob,
+            **kwargs
+        )
 
-    self.classification_loss_fn = nn.CrossEntropyLoss().to(self.device)
-
-    self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr, weight_decay=1e-4)
-
-    self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', patience=3)
-
-  @staticmethod
-  def load_model(model_path:str, backbone):
-    model = DenseNet(backbone=backbone)
-    model.model.load_state_dict(torch.load(model_path, map_location=model.device))
-    model.model.eval()
-    return model
+    @staticmethod
+    def load_model(model_path: str, backbone, hidden_channel: int):
+        model = DenseNet(backbone=backbone, hidden_channel=hidden_channel)
+        model.model.load_state_dict(torch.load(model_path, map_location=model.device))
+        model.model.eval()
+        return model
