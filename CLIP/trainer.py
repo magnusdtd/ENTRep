@@ -1,14 +1,6 @@
 from tqdm import tqdm
 import torch
-from transformers import DistilBertTokenizer
-from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-
-from CLIP.dataset import ENTRepDataset
-from CLIP.transform import get_transform
-from CLIP.CLIP import CLIP
-from utils.data import *
 from utils.early_stopping import EarlyStopping
 
 class Trainer:
@@ -19,8 +11,7 @@ class Trainer:
             val_loader, 
             optimizer, 
             scheduler=None,
-            save_path: str="clip_best.pt", 
-            epochs: int=5, 
+            save_path: str="./results/clip_best.pt", 
             earlyStopping_patience: int = 7,
         ):
         self.model = model
@@ -29,7 +20,7 @@ class Trainer:
         self.optimizer = optimizer
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.save_path = save_path
-        self.epochs = epochs
+        self.epochs = 0
         self.scheduler = scheduler
         self.train_losses = []
         self.val_losses = []
@@ -39,7 +30,8 @@ class Trainer:
             mode='min'
         )
 
-    def train(self):
+    def train(self, epochs: int):
+        self.epochs = epochs
         self.model.to(self.device)
         for epoch in range(1, self.epochs + 1):
             self.model.train()
@@ -110,35 +102,3 @@ class Trainer:
         if save_path is not None:
             fig.savefig(save_path)
         plt.show()
-
-def main():
-    df = get_t2i_task_train_df()
-    tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
-    train_df, val_df = train_test_split(
-        df, 
-        test_size=0.2,
-        random_state=42
-    )
-    train_dataset = ENTRepDataset(
-        train_df,
-        tokenizer,
-        max_length=64, 
-        transform=get_transform(train=True),
-    )
-    val_dataset = ENTRepDataset(
-        val_df,
-        tokenizer,
-        max_length=64, 
-        transform=get_transform(train=False)
-    )
-    train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True, pin_memory=True)
-    val_loader = DataLoader(val_dataset, batch_size=4, shuffle=False, pin_memory=True)
-    model = CLIP()
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=3)
-    trainer = Trainer(model, train_loader, val_loader, optimizer, scheduler=scheduler)
-    trainer.train()
-    trainer.show_learning_curves()
-
-if __name__ == "__main__":
-    main()
