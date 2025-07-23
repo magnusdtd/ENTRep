@@ -65,12 +65,12 @@ class Evaluator:
 
         # T2I MRR
         t2i_ranks = sim_matrix.argsort(dim=1, descending=True)
-        t2i_rr = 1.0 / ( (t2i_ranks == torch.arange(n).unsqueeze(1)).nonzero()[:,1].float() + 1 )
+        t2i_rr = 1.0 / ( (t2i_ranks == torch.arange(n, device=t2i_ranks.device).unsqueeze(1)).nonzero()[:,1].float() + 1 )
         t2i_mrr = t2i_rr.mean().item()
 
         # I2T MRR
         i2t_ranks = sim_matrix.argsort(dim=0, descending=True)
-        i2t_rr = 1.0 / ( (i2t_ranks == torch.arange(n).unsqueeze(1)).nonzero()[:,1].float() + 1 )
+        i2t_rr = 1.0 / ( (i2t_ranks == torch.arange(n, device=i2t_ranks.device).unsqueeze(1)).nonzero()[:,1].float() + 1 )
         i2t_mrr = i2t_rr.mean().item()
 
         return {
