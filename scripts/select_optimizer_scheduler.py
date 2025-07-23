@@ -241,7 +241,7 @@ def main():
     # Plot heatmaps
     val_acc_df = pd.DataFrame(val_acc_results).T[selection_space[0]]
     plt.figure(figsize=(10, 8))
-    sns.heatmap(val_acc_df, fmt='d', annot=True, cmap='Blues')
+    sns.heatmap(val_acc_df, annot=True, cmap='Blues')
     plt.title('Validation Accuracy Heatmap')
     plt.xlabel('Scheduler')
     plt.ylabel('Optimizer')
@@ -250,7 +250,7 @@ def main():
 
     public_acc_df = pd.DataFrame(public_acc_results).T[selection_space[0]]
     plt.figure(figsize=(10, 8))
-    sns.heatmap(public_acc_df, fmt='d', annot=True, cmap='Blues')
+    sns.heatmap(public_acc_df, annot=True, cmap='Blues')
     plt.title('Test Accuracy Heatmap')
     plt.xlabel('Scheduler')
     plt.ylabel('Optimizer')
