@@ -86,11 +86,11 @@ class Trainer:
             # Early stopping logic
             if self.early_stopping is not None:
                 self.earlyStopping(self.model, val_loss)
-                if self.earlyStopping.early_stop:
+                if self.early_stopping.early_stop:
                     print("Early stopping triggered.")
                     # Load the best model state before breaking
-                    if self.earlyStopping.best_model_state is not None:
-                        self.model.load_state_dict(self.earlyStopping.best_model_state)
+                    if self.early_stopping.best_model_state is not None:
+                        self.model.load_state_dict(self.early_stopping.best_model_state)
                     self.epochs = epoch + 1
                     break
                 
