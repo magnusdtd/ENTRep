@@ -45,10 +45,10 @@ class Evaluator:
         ).any(dim=1).float().mean().item()
 
         # I2T top k
-        i2t_topk = sim_matrix.topk(k, dim=0).indices
+        i2t_topk = sim_matrix.topk(k, dim=0).indices  # shape: [k, n]
         i2t_recall = (
-            torch.arange(n).unsqueeze(1).to(i2t_topk.device) == i2t_topk
-        ).any(dim=1).float().mean().item()
+            i2t_topk == torch.arange(n, device=i2t_topk.device).unsqueeze(0)
+        ).any(dim=0).float().mean().item()
 
         return {
             f"text_to_image_recall@{k}": t2i_recall, 
@@ -67,7 +67,7 @@ class Evaluator:
         t2i_ranks = sim_matrix.argsort(dim=1, descending=True)
         t2i_rr = 1.0 / ( (t2i_ranks == torch.arange(n).unsqueeze(1)).nonzero()[:,1].float() + 1 )
         t2i_mrr = t2i_rr.mean().item()
-        
+
         # I2T MRR
         i2t_ranks = sim_matrix.argsort(dim=0, descending=True)
         i2t_rr = 1.0 / ( (i2t_ranks == torch.arange(n).unsqueeze(1)).nonzero()[:,1].float() + 1 )
