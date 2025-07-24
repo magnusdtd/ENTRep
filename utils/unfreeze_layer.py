@@ -17,3 +17,4 @@ def unfreeze_model_layers(model, layers_to_unfreeze):
     for name, param in model.named_parameters():
         if param.requires_grad:
             print(f" - {name}")
+    print("")
