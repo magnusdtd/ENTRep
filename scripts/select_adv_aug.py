@@ -226,26 +226,69 @@ def main():
         print("="* 100, "\n")
 
     # Plotting
+    val_keys = list(val_acc_results.keys())
+    val_values = list(val_acc_results.values())
+    public_keys = list(public_acc_results.keys())
+    public_values = list(public_acc_results.values())
+
+    val_palette = sns.color_palette("hls", len(val_keys))
+    public_palette = sns.color_palette("hls", len(public_keys))
+
+    # Prepare DataFrames for plotting
+    val_df = pd.DataFrame({'Augmentation': val_keys, 'Accuracy': val_values})
+    public_df = pd.DataFrame({'Augmentation': public_keys, 'Accuracy': public_values})
+
     plt.figure(figsize=(10, 5))
-    sns.barplot(x=list(val_acc_results.keys()), y=list(val_acc_results.values()))
-    plt.title('Validation Accuracy by Augmentation Mode')
+    ax1 = sns.barplot(
+        data=val_df,
+        x='Augmentation',
+        y='Accuracy',
+        hue='Augmentation',
+        palette=val_palette,
+        legend=False
+    )
+    plt.title('Validation Accuracy with Advanced Augmentation')
     plt.ylabel('Validation Accuracy')
-    plt.xlabel('Augmentation Mode')
+    plt.xlabel('Advanced Augmentation')
     plt.xticks(rotation=30)
+    for spine in ax1.spines.values():
+        spine.set_visible(False)
+    for p in ax1.patches:
+        height = p.get_height()
+        ax1.annotate(f'{height:.4f}',
+                     (p.get_x() + p.get_width() / 2., height),
+                     ha='center', va='bottom',
+                     fontsize=10, color='black',
+                     xytext=(0, 3), textcoords='offset points')
     plt.tight_layout()
     plt.savefig('val_acc_by_aug_mode.png')
     plt.show()
 
     plt.figure(figsize=(10, 5))
-    sns.barplot(x=list(public_acc_results.keys()), y=list(public_acc_results.values()))
-    plt.title('Public Accuracy by Augmentation Mode')
-    plt.ylabel('Public Accuracy')
-    plt.xlabel('Augmentation Mode')
+    ax2 = sns.barplot(
+        data=public_df,
+        x='Augmentation',
+        y='Accuracy',
+        hue='Augmentation',
+        palette=public_palette,
+        legend=False
+    )
+    plt.title('Test Accuracy with Advanced Augmentation')
+    plt.ylabel('Test Accuracy')
+    plt.xlabel('Advanced Augmentation')
     plt.xticks(rotation=30)
+    for spine in ax2.spines.values():
+        spine.set_visible(False)
+    for p in ax2.patches:
+        height = p.get_height()
+        ax2.annotate(f'{height:.4f}',
+                     (p.get_x() + p.get_width() / 2., height),
+                     ha='center', va='bottom',
+                     fontsize=10, color='black',
+                     xytext=(0, 3), textcoords='offset points')
     plt.tight_layout()
-    plt.savefig('public_acc_by_aug_mode.png')
+    plt.savefig('test_acc_by_aug_mode.png')
     plt.show()
-
 
 if __name__ == '__main__':
   main()
