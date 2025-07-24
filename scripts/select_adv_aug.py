@@ -243,10 +243,10 @@ def main():
         data=val_df,
         x='Augmentation',
         y='Accuracy',
-        hue='Augmentation',
-        palette=val_palette,
-        legend=False
+        palette=val_palette
     )
+    if ax1.get_legend() is not None:
+        ax1.get_legend().remove()
     plt.title('Validation Accuracy with Advanced Augmentation')
     plt.ylabel('Validation Accuracy')
     plt.xlabel('Advanced Augmentation')
@@ -256,10 +256,10 @@ def main():
     for p in ax1.patches:
         height = p.get_height()
         ax1.annotate(f'{height:.4f}',
-                     (p.get_x() + p.get_width() / 2., height),
-                     ha='center', va='bottom',
-                     fontsize=10, color='black',
-                     xytext=(0, 3), textcoords='offset points')
+                        (p.get_x() + p.get_width() / 2., height),
+                        ha='center', va='bottom',
+                        fontsize=10, color='black',
+                        xytext=(0, 3), textcoords='offset points')
     plt.tight_layout()
     plt.savefig('val_acc_by_aug_mode.png')
     plt.show()
@@ -269,10 +269,10 @@ def main():
         data=public_df,
         x='Augmentation',
         y='Accuracy',
-        hue='Augmentation',
-        palette=public_palette,
-        legend=False
+        palette=public_palette
     )
+    if ax2.get_legend() is not None:
+        ax2.get_legend().remove()
     plt.title('Test Accuracy with Advanced Augmentation')
     plt.ylabel('Test Accuracy')
     plt.xlabel('Advanced Augmentation')
@@ -282,10 +282,10 @@ def main():
     for p in ax2.patches:
         height = p.get_height()
         ax2.annotate(f'{height:.4f}',
-                     (p.get_x() + p.get_width() / 2., height),
-                     ha='center', va='bottom',
-                     fontsize=10, color='black',
-                     xytext=(0, 3), textcoords='offset points')
+                        (p.get_x() + p.get_width() / 2., height),
+                        ha='center', va='bottom',
+                        fontsize=10, color='black',
+                        xytext=(0, 3), textcoords='offset points')
     plt.tight_layout()
     plt.savefig('test_acc_by_aug_mode.png')
     plt.show()
