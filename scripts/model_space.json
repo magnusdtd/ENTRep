@@ -1,0 +1,28 @@
+
+{
+  "model": [
+    {
+      "name": "ResNet50",
+      "unfreeze_layers": ["fc", "layer4"]
+    },
+    {
+      "name": "DenseNet121",
+      "unfreeze_layers": ["classifier", "features.norm5", "features.denseblock4", "features.denseblock3"]
+    },
+    {
+      "name": "EfficientNet_B0",
+      "unfreeze_layers": ["classifier", "features.8", "features.7", "features.6", "features.5"]
+    },
+    {
+      "name": "Swin_T",
+      "unfreeze_layers": ["head", "norm", "features.7.1"]
+    }
+  ],
+  "optimizer": "torch.optim.AdamW",
+  "scheduler_map": "torch.optim.lr_scheduler.CosineAnnealingLR",
+  "optimizer_kwargs_space": {"lr": 1e-3, "weight_decay": 0},
+  "scheduler_kwargs_space": {"T_max": 100, "eta_min": 1e-6},
+  "use_mixup": true,
+  "use_cutmix": true,
+  "use_mosaic": true
+}
