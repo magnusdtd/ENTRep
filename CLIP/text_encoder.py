@@ -17,8 +17,10 @@ class TextEncoder(torch.nn.Module):
         else:
             self.model = DistilBertModel(config=DistilBertConfig())
             
-        if unfreeze_layers:
-            unfreeze_model_layers(self.model, unfreeze_layers)
+
+        # for name, param in self.model.named_parameters():
+        #     print(f" - {name}, requires grad = {param.requires_grad}")
+        unfreeze_model_layers(self.model, unfreeze_layers)
 
         # Using the CLS token hidden representation as the sentence's embedding
         self.target_token_idx = 0

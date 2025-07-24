@@ -16,8 +16,9 @@ class ImageEncoder(torch.nn.Module):
         self.feature_extractor = torch.nn.Sequential(*list(resnet.children())[:-1]) 
         self.out_features = resnet.fc.in_features  # 2048 for resnet50
 
-        if unfreeze_layers:
-            unfreeze_model_layers(self.feature_extractor, unfreeze_layers)
+        # for name, param in self.feature_extractor.named_parameters():
+        #     print(f" - {name}, requires grad = {param.requires_grad}")
+        unfreeze_model_layers(self.feature_extractor, unfreeze_layers)
 
     def forward(self, x):
         # x: (batch, 3, H, W)
