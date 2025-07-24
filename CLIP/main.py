@@ -82,7 +82,13 @@ def main():
     img_unfreeze_layers = [l.strip() for l in args.img_encoder_unfreeze_layers.split(',') if l]
     text_unfreeze_layers = [l.strip() for l in args.text_encoder_unfreeze_layers.split(',') if l]
 
-    df = get_t2i_task_train_df()
+    df_1 = get_t2i_task_train_df()
+    df_2 = get_public_df()
+    df_2['Caption'] = df_2['DescriptionEN']
+    df_1_selected = df_1[['Path', 'Caption']]
+    df_2_selected = df_2[['Path', 'Caption']]
+    df = pd.concat([df_1_selected, df_2_selected], ignore_index=True)
+
     tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
     train_df, val_df = train_test_split(
         df, 
