@@ -99,10 +99,10 @@ def train(
     )
 
     # Define result file paths
-    val_conf_matrix_path = f'./results/val_df_{optimizer_name}_{scheduler_name}_confusion_matrix.png'
-    val_report_path = f'./results/val_df_{optimizer_name}_{scheduler_name}_classification_report.txt'
-    public_conf_matrix_path = f'./results/public_df_{optimizer_name}_{scheduler_name}_confusion_matrix.png'
-    public_report_path = f'./results/public_df_{optimizer_name}_{scheduler_name}_classification_report.txt'
+    val_conf_matrix_path = f'./results/val_df_{model_class.__name__}_{optimizer_name}_{scheduler_name}_confusion_matrix.png'
+    val_report_path = f'./results/val_df_{model_class.__name__}_{optimizer_name}_{scheduler_name}_classification_report.txt'
+    public_conf_matrix_path = f'./results/public_df_{model_class.__name__}_{optimizer_name}_{scheduler_name}_confusion_matrix.png'
+    public_report_path = f'./results/public_df_{model_class.__name__}_{optimizer_name}_{scheduler_name}_classification_report.txt'
 
     # Evaluate on validation set
     evaluate_model(
