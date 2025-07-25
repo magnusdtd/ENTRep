@@ -56,7 +56,8 @@ def train(
     scheduler_kwargs,
     use_mixup=False,
     use_cutmix=False,
-    use_mosaic=False
+    use_mosaic=False,
+    exp_name=None
 ):
     # Initialize model
     model = ResNet(
@@ -80,12 +81,19 @@ def train(
         unfreeze_layers=['fc', 'layer4']
     )
 
+    # Use exp_name to make file paths unique
+    exp_name_safe = exp_name.replace(' ', '_').replace('+', 'plus') if exp_name else ''
+    learning_curve_path = f'./results/resnet50_{optimizer_name}_{scheduler_name}_{exp_name_safe}_hold_out_learning_curve.png'
+    model_path = f'ResNet50_{optimizer_name}_{scheduler_name}_{exp_name_safe}.pth'
+    val_conf_matrix_path = f'./results/val_df_{optimizer_name}_{scheduler_name}_{exp_name_safe}_confusion_matrix.png'
+    val_report_path = f'./results/val_df_{optimizer_name}_{scheduler_name}_{exp_name_safe}_classification_report.txt'
+    public_conf_matrix_path = f'./results/public_df_{optimizer_name}_{scheduler_name}_{exp_name_safe}_confusion_matrix.png'
+    public_report_path = f'./results/public_df_{optimizer_name}_{scheduler_name}_{exp_name_safe}_classification_report.txt'
+
     # Show learning curves
-    learning_curve_path = f'./results/resnet50_{optimizer_name}_{scheduler_name}_hold_out_learning_curve.png'
     model.show_learning_curves(learning_curve_path)
 
     # Save model state
-    model_path = f'ResNet50_{optimizer_name}_{scheduler_name}.pth'
     model.save_model_state(model_path)
 
     # Reload model for evaluation
@@ -94,12 +102,6 @@ def train(
         models.resnet50(weights=models.ResNet50_Weights.DEFAULT),
         512
     )
-
-    # Define result file paths
-    val_conf_matrix_path = f'./results/val_df_{optimizer_name}_{scheduler_name}_confusion_matrix.png'
-    val_report_path = f'./results/val_df_{optimizer_name}_{scheduler_name}_classification_report.txt'
-    public_conf_matrix_path = f'./results/public_df_{optimizer_name}_{scheduler_name}_confusion_matrix.png'
-    public_report_path = f'./results/public_df_{optimizer_name}_{scheduler_name}_classification_report.txt'
 
     # Evaluate on validation set
     evaluate_model(
@@ -219,7 +221,8 @@ def main():
             scheduler_kwargs,
             use_mixup=mode["mixup"],
             use_cutmix=mode["cutmix"],
-            use_mosaic=mode["mosaic"]
+            use_mosaic=mode["mosaic"],
+            exp_name=mode["name"]
         )
         val_acc_results[mode["name"]] = val_acc
         public_acc_results[mode["name"]] = public_acc
