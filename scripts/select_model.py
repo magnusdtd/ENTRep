@@ -13,6 +13,7 @@ import json
 import seaborn as sns
 import matplotlib.pyplot as plt
 from scripts.model_registry import MODEL_REGISTRY
+import pandas as pd
 
 random.seed(42)
 np.random.seed(42)
@@ -220,22 +221,66 @@ def main():
         public_acc_results[model_name] = public_acc
 
     # Plotting
+    val_keys = list(val_acc_results.keys())
+    val_values = list(val_acc_results.values())
+    public_keys = list(public_acc_results.keys())
+    public_values = list(public_acc_results.values())
+
+    val_palette = sns.color_palette("hls", len(val_keys))
+    public_palette = sns.color_palette("hls", len(public_keys))
+
+    # Prepare DataFrames for plotting
+    val_df_plot = pd.DataFrame({'Model': val_keys, 'Accuracy': val_values})
+    public_df_plot = pd.DataFrame({'Model': public_keys, 'Accuracy': public_values})
+
     plt.figure(figsize=(10, 5))
-    sns.barplot(x=list(val_acc_results.keys()), y=list(val_acc_results.values()))
-    plt.title('Validation Accuracy by Model Variant')
+    ax1 = sns.barplot(
+        data=val_df_plot,
+        x='Model',
+        y='Accuracy',
+        palette=val_palette
+    )
+    if ax1.get_legend() is not None:
+        ax1.get_legend().remove()
+    plt.title('Validation Accuracy by Models')
     plt.ylabel('Validation Accuracy')
-    plt.xlabel('Model Variant')
+    plt.xlabel('Models')
     plt.xticks(rotation=30)
+    for spine in ax1.spines.values():
+        spine.set_visible(False)
+    for p in ax1.patches:
+        height = p.get_height()
+        ax1.annotate(f'{height:.4f}',
+                        (p.get_x() + p.get_width() / 2., height),
+                        ha='center', va='bottom',
+                        fontsize=10, color='black',
+                        xytext=(0, 3), textcoords='offset points')
     plt.tight_layout()
     plt.savefig('val_acc_by_model_variant.png')
     plt.show()
 
     plt.figure(figsize=(10, 5))
-    sns.barplot(x=list(public_acc_results.keys()), y=list(public_acc_results.values()))
-    plt.title('Public Accuracy by Model Variant')
-    plt.ylabel('Public Accuracy')
-    plt.xlabel('Model Variant')
+    ax2 = sns.barplot(
+        data=public_df_plot,
+        x='Model',
+        y='Accuracy',
+        palette=public_palette
+    )
+    if ax2.get_legend() is not None:
+        ax2.get_legend().remove()
+    plt.title('Test Accuracy by Models')
+    plt.ylabel('Test Accuracy')
+    plt.xlabel('Models')
     plt.xticks(rotation=30)
+    for spine in ax2.spines.values():
+        spine.set_visible(False)
+    for p in ax2.patches:
+        height = p.get_height()
+        ax2.annotate(f'{height:.4f}',
+                        (p.get_x() + p.get_width() / 2., height),
+                        ha='center', va='bottom',
+                        fontsize=10, color='black',
+                        xytext=(0, 3), textcoords='offset points')
     plt.tight_layout()
     plt.savefig('public_acc_by_model_variant.png')
     plt.show()
