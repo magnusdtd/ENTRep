@@ -14,6 +14,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from scripts.model_registry import MODEL_REGISTRY
 import pandas as pd
+import os
 
 random.seed(42)
 np.random.seed(42)
@@ -24,6 +25,10 @@ if torch.cuda.is_available():
 def save_to_disk(obj, filename):
     with open(filename, 'wb') as f:
         pickle.dump(obj, f)
+
+def load_from_disk(filename):
+    with open(filename, 'rb') as f:
+        return pickle.load(f)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Select optimizer and scheduler settings from a JSON file.')
@@ -136,22 +141,11 @@ def main():
         with open(args.config, 'r') as f:
             config = json.load(f)
         model_variants = config['model']
-        optimizer_name = config['optimizer']
-        scheduler_name = config['scheduler_map']
-        optimizer = eval(optimizer_name)
-        scheduler = eval(scheduler_name)
-        optimizer_kwargs = config['optimizer_kwargs_space']
-        scheduler_kwargs = config['scheduler_kwargs_space']
     else:
         raise ValueError("\nNo found JSON config file for optimizer/scheduler selection space.")
-
-    df = get_classification_task_train_df()
-    test_df = get_classification_task_test_df()
-    public_df = get_public_df()
-    public_df['Label'] = public_df['Classification']
-
+    
     label_encoder = {
-        "nose-right": 0, 
+        "nose-right": 0,    
         "nose-left" : 1, 
         "ear-right" : 2, 
         "ear-left"  : 3, 
@@ -160,36 +154,49 @@ def main():
         "throat"    : 6, 
     }
 
-    train_df, val_df = train_test_split(df, test_size=0.2, stratify=df['Label'], random_state=42)
-    train_dataset = ENTRepDataset(
-        train_df,
-        label_encoder,
-        transform=get_transform(train=True),
-        is_train = True
-    )
-    val_dataset = ENTRepDataset(
-        val_df,
-        label_encoder,
-        transform=get_transform(train=False)
-    )
-    public_dataset = ENTRepDataset(
-       public_df, 
-       label_encoder, 
-       transform=get_transform(train=False)
-    )
+    data_dir = './data'
+    train_pkl = os.path.join(data_dir, 'train_dataset.pkl')
+    val_pkl = os.path.join(data_dir, 'val_dataset.pkl')
+    public_pkl = os.path.join(data_dir, 'public_dataset.pkl')
+
+    if os.path.exists(train_pkl) and os.path.exists(val_pkl) and os.path.exists(public_pkl):
+        print('Loading datasets from pickle files...')
+        train_dataset = load_from_disk(train_pkl)
+        val_dataset = load_from_disk(val_pkl)
+        public_dataset = load_from_disk(public_pkl)
+    else:
+        print('Pickle files not found. Creating datasets from scratch...')
+        df = get_classification_task_train_df()
+        test_df = get_classification_task_test_df()
+        public_df = get_public_df()
+        public_df['Label'] = public_df['Classification']
+
+        train_df, val_df = train_test_split(df, test_size=0.2, stratify=df['Label'], random_state=42)
+        train_dataset = ENTRepDataset(
+            train_df,
+            label_encoder,
+            transform=get_transform(train=True),
+            is_train = True
+        )
+        val_dataset = ENTRepDataset(
+            val_df,
+            label_encoder,
+            transform=get_transform(train=False)
+        )
+        public_dataset = ENTRepDataset(
+           public_df, 
+           label_encoder, 
+           transform=get_transform(train=False)
+        )
+        # Save datasets
+        os.makedirs(data_dir, exist_ok=True)
+        save_to_disk(train_dataset, train_pkl)
+        save_to_disk(val_dataset, val_pkl)
+        save_to_disk(public_dataset, public_pkl)
 
     train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True, pin_memory=True)
     val_loader = DataLoader(val_dataset, batch_size=4, shuffle=False, pin_memory=True)
     public_loader = DataLoader(public_dataset, batch_size=4, shuffle=False, pin_memory=True)
-
-    # Save datasets and dataloaders
-    save_to_disk(train_dataset, 'train_dataset.pkl')
-    save_to_disk(val_dataset, 'val_dataset.pkl')
-    save_to_disk(public_dataset, 'public_dataset.pkl')
-
-    save_to_disk(train_loader, 'train_loader.pkl')
-    save_to_disk(val_loader, 'val_loader.pkl')
-    save_to_disk(public_loader, 'public_loader.pkl')
     
     val_acc_results = {}
     public_acc_results = {}
@@ -198,6 +205,13 @@ def main():
         model_name = model_variant["name"]
         unfreeze_layers = model_variant.get("unfreeze_layers", [])
         model_info = MODEL_REGISTRY[model_name]
+        # Get optimizer, scheduler, and kwargs for this model
+        optimizer_name = model_variant["optimizer"]
+        optimizer = eval(optimizer_name)
+        optimizer_kwargs = model_variant["optimizer_kwargs"]
+        scheduler_name = model_variant["scheduler"]
+        scheduler = eval(scheduler_name)
+        scheduler_kwargs = model_variant["scheduler_kwargs"]
         val_acc, public_acc = train(
             label_encoder,
             train_loader,
@@ -212,9 +226,9 @@ def main():
             model_class=model_info["class"],
             backbone=model_info["backbone"],
             hidden_channel=model_info["hidden_channel"],
-            use_mixup=config.get("use_mixup", False),
-            use_cutmix=config.get("use_cutmix", False),
-            use_mosaic=config.get("use_mosaic", False),
+            use_mixup=model_variant.get("use_mixup", False),
+            use_cutmix=model_variant.get("use_cutmix", False),
+            use_mosaic=model_variant.get("use_mosaic", False),
             unfreeze_layers=unfreeze_layers
         )
         val_acc_results[model_name] = val_acc
