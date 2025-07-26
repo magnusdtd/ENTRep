@@ -91,7 +91,7 @@ class SimCLRTrainer:
                     zi = self.model(xi)
                     zj = self.model(xj)
                     val_loss += self.criterion(zi, zj).item()
-                    val_progress_bar.set_postfix(batch_loss=val_loss.item())
+                    val_progress_bar.set_postfix(batch_loss=self.criterion(zi, zj).item())
                     val_embeddings.append(zi.detach().cpu())
                     val_embeddings.append(zj.detach().cpu())
             self.val_losses.append(val_loss / num_val_images)
