@@ -1,10 +1,11 @@
 {
-  "lr": 0.0002,
-  "epochs": 10,
-  "batch_size": 4,
+  "lr": 1e-6,
+  "epochs": 100,
+  "batch_size": 8,
+  "recall_k": 5,
   "optimizer": "AdamW",
   "scheduler": "cosine",
   "optimizer_kwargs": {"weight_decay": 0},
-  "img_encoder_unfreeze_layers": "7.2",
-  "text_encoder_unfreeze_layers": "transformer.layer.5"
+  "img_encoder_unfreeze_layers": "0, 1, 2, 3, 4, 5, 6, 7",
+  "text_encoder_unfreeze_layers": "transformer"
 }

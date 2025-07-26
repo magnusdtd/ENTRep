@@ -3,7 +3,7 @@ import torch
 class ProjectionHead(torch.nn.Module):
     def __init__(
         self,
-        embedding_dim: torch.int16,
+        embedding_dim: int,
         projection_dim: int = 256,
         dropout_ratio: int = 0.4
     ):
