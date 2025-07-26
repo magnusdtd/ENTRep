@@ -1,7 +1,10 @@
+#=====================================#
+# This script can only run in Kaggle. #
+#=====================================#
+
 from BioCLIP.make_submission import make_submission_t2i_task
-from BioCLIP.evaluator import ImageToTextEvaluator, TextToImageEvaluator
+from BioCLIP.evaluator import TextToImageEvaluator
 from BioCLIP.data_preparation import DataPreparation
-import pandas as pd
 import os
 
 def main():
