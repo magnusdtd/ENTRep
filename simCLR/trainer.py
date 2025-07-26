@@ -95,6 +95,7 @@ class SimCLRTrainer:
                     val_embeddings.append(zi.detach().cpu())
                     val_embeddings.append(zj.detach().cpu())
             self.val_losses.append(val_loss / num_val_images)
+            print(f"Epoch {epoch+1}/{self.epochs}, Val Loss: {val_loss / num_val_images:.4f}")
 
             # Calculate recall@k and MRR for positive pairs
             val_embeddings_tensor = torch.cat(val_embeddings, dim=0)
@@ -103,7 +104,7 @@ class SimCLRTrainer:
             self.mrr_values.append(mrr)
             print(f"Recall@{self.k}: {recall_k:.4f} | MRR: {mrr:.4f}")
 
-            self.early_stopping(self.model, recall_k)
+            self.early_stopping(self.model, val_loss)
             if self.early_stopping.early_stop:
               print("Early stopping triggered.")
               # Load the best model state before breaking
@@ -137,16 +138,16 @@ class SimCLRTrainer:
 
         # Plot recall@k
         if self.recall_k_values:
-            axes[1].plot(epochs, self.recall_k_values, label="Recall@1", color='green')
+            axes[1].plot(epochs, self.recall_k_values, label=f"Recall@{self.k}", color='green')
             axes[1].set_xlabel("Epochs")
-            axes[1].set_ylabel("Recall@1")
-            axes[1].set_title("Recall@1 Curve")
+            axes[1].set_ylabel(f"Recall@{self.k}")
+            axes[1].set_title(f"Recall@{self.k} Curve")
             axes[1].legend()
             axes[1].grid(True)
         else:
             axes[1].text(0.5, 0.5, 'No validation data available', 
                         ha='center', va='center', transform=axes[1].transAxes)
-            axes[1].set_title("Recall@1 Curve")
+            axes[1].set_title(f"Recall@{self.k} Curve")
 
         plt.tight_layout()
         if save_path is not None:

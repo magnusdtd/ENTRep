@@ -79,6 +79,8 @@ def main(args):
     print(f"Recall@{args.k} = {recall_k}")
     print(f"MRR = {mrr}")
 
+    trainer.show_learning_curves("./results/learning_curve.png")
+
 if __name__ == "__main__":
     args = parse_args()
     main(args)
