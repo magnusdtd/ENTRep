@@ -103,12 +103,12 @@ class SimCLRTrainer:
             self.mrr_values.append(mrr)
             print(f"Recall@{self.k}: {recall_k:.4f} | MRR: {mrr:.4f}")
 
-            self.earlyStopping(self.model, recall_k)
-            if self.earlyStopping.early_stop:
+            self.early_stopping(self.model, recall_k)
+            if self.early_stopping.early_stop:
               print("Early stopping triggered.")
               # Load the best model state before breaking
-              if self.earlyStopping.best_model_state is not None:
-                self.model.load_state_dict(self.earlyStopping.best_model_state)
+              if self.early_stopping.best_model_state is not None:
+                self.model.load_state_dict(self.early_stopping.best_model_state)
               self.epochs = epoch + 1
               break
     
