@@ -41,7 +41,7 @@ def evaluate_model(
     plt.savefig(cm_path)
     plt.show()
 
-    report = classification_report(all_labels, all_preds, target_names=class_names)
+    report = classification_report(all_labels, all_preds, target_names=class_names, digits=4)
     print("Classification Report:")
     print(report)
     with open(report_path, "w") as f:
