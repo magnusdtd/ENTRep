@@ -5,8 +5,7 @@ from utils.unfreeze_layer import unfreeze_model_layers
 
 class ImageEncoder(torch.nn.Module):
     def __init__(
-        self, 
-        pretrained: bool = True, 
+        self,
         unfreeze_layers: List = []
     ):
         super().__init__()
