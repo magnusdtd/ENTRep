@@ -59,7 +59,7 @@ class SimCLRTrainer:
         return recall_at_k, mrr
 
     def train(self, epochs=10):
-    
+        self.epochs = epochs
         for epoch in range(epochs):
             self.model.train()
             train_loss = 0
