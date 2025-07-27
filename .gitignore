@@ -192,3 +192,17 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+*.zip
+Dataset/
+*.pth
+*.pt
+model_weights/
+pure_bioclip/
+open_clip/
+logs/
+*.log
+bio-clip-ft/
+results/*
+report/results/
+data/

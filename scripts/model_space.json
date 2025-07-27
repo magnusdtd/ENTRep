@@ -1,0 +1,49 @@
+
+{
+  "model": [
+    {
+      "name": "ResNet50",
+      "unfreeze_layers": ["fc", "layer4"],
+      "optimizer": "torch.optim.AdamW",
+      "optimizer_kwargs": {"lr": 1e-3, "weight_decay": 0},
+      "scheduler": "torch.optim.lr_scheduler.CosineAnnealingLR",
+      "scheduler_kwargs": {"T_max": 100, "eta_min": 1e-6},
+      "use_mixup": true,
+      "use_cutmix": true,
+      "use_mosaic": true
+    },
+    {
+      "name": "DenseNet121",
+      "unfreeze_layers": ["classifier", "features.norm5", "features.denseblock4", "features.denseblock3"],
+      "optimizer": "torch.optim.SGD",
+      "optimizer_kwargs": {"lr": 1e-4, "weight_decay": 0},
+      "scheduler": "torch.optim.lr_scheduler.CosineAnnealingLR",
+      "scheduler_kwargs": {"T_max": 100, "eta_min": 1e-6},
+      "use_mixup": true,
+      "use_cutmix": true,
+      "use_mosaic": true
+    },
+    {
+      "name": "EfficientNet_B0",
+      "unfreeze_layers": ["classifier", "features.8", "features.7", "features.6", "features.5"],
+      "optimizer": "torch.optim.AdamW",
+      "optimizer_kwargs": {"lr": 1e-4, "weight_decay": 0},
+      "scheduler": "torch.optim.lr_scheduler.CosineAnnealingLR",
+      "scheduler_kwargs": {"T_max": 100, "eta_min": 1e-6},
+      "use_mixup": true,
+      "use_cutmix": true,
+      "use_mosaic": true
+    },
+    {
+      "name": "Swin_T",
+      "unfreeze_layers": ["head", "norm", "features.7.1"],
+      "optimizer": "torch.optim.AdamW",
+      "optimizer_kwargs": {"lr": 1e-3, "weight_decay": 0},
+      "scheduler": "torch.optim.lr_scheduler.CosineAnnealingLR",
+      "scheduler_kwargs": {"T_max": 100, "eta_min": 1e-6},
+      "use_mixup": true,
+      "use_cutmix": true,
+      "use_mosaic": true
+    }
+  ]
+}
