@@ -5,9 +5,9 @@ print(f'Thư mục hiện tại: {os.getcwd()}')
 
 from transformers import AutoImageProcessor, AutoTokenizer
 from torch.utils.data import DataLoader
-from dinov2_cls.dataset import ImageTextRetrievalDataset
-from dinov2_cls.transform import train_transform
-from dinov2_cls.dinov2_bert import contrastive_loss, ImageTextRetrievalModel
+from dinov2.dataset import ImageTextRetrievalDataset
+from dinov2.transform import train_transform
+from dinov2.dinov2_bert import contrastive_loss, ImageTextRetrievalModel
 import os
 import torch
 
