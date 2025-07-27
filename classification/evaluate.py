@@ -4,8 +4,14 @@ import seaborn as sns
 from sklearn.metrics import confusion_matrix, classification_report
 from torch.utils.data import DataLoader
 
-def evaluate_class_model(model, val_loader:DataLoader, class_feature_map:dict):
-    """Evaluate the model on the validation dataset and plot a confusion matrix heatmap."""
+def evaluate_model(
+        model, 
+        val_loader:DataLoader, 
+        label_encoder:dict, 
+        cm_path="confusion_matrix.png", 
+        report_path="classification_report.txt"
+    ):
+    """Evaluate the model on the validation dataset, plot and save a confusion matrix heatmap, and save the classification report."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.model.eval()
 
@@ -24,14 +30,19 @@ def evaluate_class_model(model, val_loader:DataLoader, class_feature_map:dict):
             all_labels.extend(labels.cpu().numpy())
 
     cm = confusion_matrix(all_labels, all_preds)
-    class_names = list(class_feature_map.keys())
+    class_names = list(label_encoder.keys())
 
     plt.figure(figsize=(10, 8))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=class_names, yticklabels=class_names)
     plt.xlabel('Predicted Labels')
     plt.ylabel('True Labels')
-    plt.title('Confusion Matrix Heatmap')
+    plt.title('Confusion Matrix')
+    plt.tight_layout()
+    plt.savefig(cm_path)
     plt.show()
 
+    report = classification_report(all_labels, all_preds, target_names=class_names, digits=4)
     print("Classification Report:")
-    print(classification_report(all_labels, all_preds, target_names=class_names))
+    print(report)
+    with open(report_path, "w") as f:
+        f.write(report)

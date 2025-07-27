@@ -10,10 +10,6 @@ import pandas as pd
 
 def get_transform(train: bool = True, img_size: Tuple[int, int] = (480, 640)):
     transforms_list = []
-    # transforms_list.extend([
-    #     A.LongestMaxSize(max_size=img_size),
-    #     A.PadIfNeeded(min_height=img_size, min_width=img_size, border_mode=cv2.BORDER_CONSTANT, value=[0, 0, 0]),
-    # ])
     if train:
         transforms_list.extend([
 
@@ -58,9 +54,6 @@ def visualize_sample(df: pd.DataFrame, dataloader: DataLoader, label_encoder: di
 
         class_name = inv_label_encoder[_class]
 
-        # Use df to find the original label for this image
-        # df has columns "Path" and "Label"
-        # Find the row where "Path" matches img_path
         orig_label_row = df[df["Path"] == img_path]
         if not orig_label_row.empty:
             orig_label = orig_label_row.iloc[0]["Label"]

@@ -204,3 +204,6 @@ logs/
 *.log
 bio-clip-ft/
 dinov2/
+results/*
+report/results/
+data/
