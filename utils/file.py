@@ -52,4 +52,4 @@ class File:
         if not directory.is_dir() or directory.is_symlink():
             raise ValueError(f"The path {directory_path} is not a directory or is a symlink")
 
-        shutil.rmtree(directory)
+        shutil.rmtree(directory, ignore_errors=True)
