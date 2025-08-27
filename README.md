@@ -158,16 +158,16 @@ python select_adv_aug.py --config adv_aug_space.json
 
 ### Implemented Architectures
 
-| Model | Type | Use Case | Performance |
-|-------|------|----------|-------------|
-| **BioCLIP** | Vision-Language | Text-to-Image Retrieval | State-of-the-art |
-| **CLIP** | Vision-Language | Multi-modal tasks | High |
-| **ResNet50** | CNN | Classification | 71.93% accuracy |
-| **DenseNet** | CNN | Classification | High |
-| **EfficientNet** | CNN | Classification | Efficient |
-| **SwinTransformer** | Transformer | Classification | Modern |
-| **DINOv2** | Self-supervised | Feature extraction | Robust |
-| **SimCLR** | Self-supervised | Representation learning | Contrastive |
+| Model           | Type              | Use Case                   |
+|-----------------|-------------------|----------------------------|
+| **BioCLIP**     | Vision-Language   | Text-to-Image Retrieval    |
+| **CLIP**        | Vision-Language   | Multi-modal tasks          |
+| **ResNet50**    | CNN               | Classification             |
+| **DenseNet**    | CNN               | Classification             |
+| **EfficientNet**| CNN               | Classification             |
+| **SwinTransformer** | Transformer    | Classification             |
+| **DINOv2**      | Self-supervised   | Feature extraction         |
+| **SimCLR**      | Self-supervised   | Representation learning    |
 
 ### Model Selection
 
@@ -197,14 +197,21 @@ python select_model.py --config model_space.json
 
 ## 🏆 Results
 
-### Classification Results
-- **ResNet50**: 71.93% accuracy
-- Multiple architectures evaluated with comprehensive metrics
+### Best Results
 
-### Retrieval Performance
-- Recall@K metrics for retrieval tasks
-- Mean Reciprocal Rank (MRR) evaluation
-- Comprehensive evaluation scripts included
+- **Classification task**: ResNet50 + advanced augmentation  
+  - Accuracy: 0.87  
+  - Precision: 0.87  
+  - Recall: 0.86  
+  - F1: 0.86
+
+- **Image-to-image retrieval**: Ensemble (DINOv2 + BioCLIP + SAMViT)  
+  - Recall@1: 0.88  
+  - MRR: 0.93
+
+- **Text-to-image retrieval**: BioCLIP fine-tuned  
+  - Recall@1: 0.91  
+  - MRR: 0.95
 
 ## 🔬 Advanced Features
 
@@ -267,9 +274,6 @@ cd ENTRep
 
 # Create development environment
 pip install -r requirements.txt
-
-# Run tests (if available)
-python -m pytest tests/
 ```
 
 ## 📜 License
@@ -296,7 +300,3 @@ If you use this code in your research, please cite:
 - Kaggle platform for computational resources
 
 ---
-
-<p align="center">
-  <strong>Built with ❤️ for advancing medical AI</strong>
-</p>
